@@ -4,7 +4,7 @@
  * 
  * Licensed under MIT license.
  *
- * Date: 26 / 07 / 2013
+ * Date: 25 / 07 / 2013
  * @version 1.0
  * @author Pekka Harjamäki
  */
