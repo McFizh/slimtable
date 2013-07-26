@@ -4,7 +4,6 @@ SlimTable
 SlimTable is a plugin for jQuery, which creates sortable and pageable tables from existing table data. Plugin is quite lightweight, as it only takes 4kB when minified. 
 
 Official homepage of slimtable:
-
 http://slimtable.mcfish.org
 
 ### Supported jQuery versions
