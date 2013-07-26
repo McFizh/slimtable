@@ -5,8 +5,9 @@
 	"version": "v1.0",
 
 	"keywords": [
-		"color",
-		"animation"
+		"table",
+		"sorting",
+		"paging"
 	],
 
 	"author": {
