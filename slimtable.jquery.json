@@ -1,0 +1,30 @@
+{
+	"name": "slimtable",
+	"title": "jQuery SlimTable",
+	"description": "jQuery plugin to create sortable and pageable table.",
+	"version": "v1.0",
+
+	"keywords": [
+		"color",
+		"animation"
+	],
+
+	"author": {
+		"name": "Pekka Harjamäki",
+		"url": "http://www.mcfish.org/"
+	},
+
+	"licenses": [
+		{
+		"type": "MIT",
+		"url": "https://raw.github.com/McFizh/slimtable/master/LICENSE"
+		}
+	],
+
+	"homepage": "http://slimtable.mcfish.org/",
+	"bugs": "https://github.com/McFizh/slimtable/issues",
+
+	"dependencies": {
+		"jquery": ">=1.9"
+	}
+}
