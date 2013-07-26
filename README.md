@@ -8,6 +8,7 @@ http://slimtable.mcfish.org
 
 ### Supported jQuery versions
 
++ jQuery 1.8.3
 + jQuery 1.9.1
 + jQuery 1.10.2
 + jQuery 2.0.3
@@ -26,6 +27,9 @@ Might work with other browsers, but these are the ones that are officially suppo
 
 ### Changelog
 
++ **v1.1** 26.7.2013
+  - Creating table from ajax data now works
+  - Lowered jQuery requirement to jQuery 1.8
 + **v1.0** 25.7.2013
   - Public release
 

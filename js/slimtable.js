@@ -4,8 +4,8 @@
  * 
  * Licensed under MIT license.
  *
- * Date: 25 / 07 / 2013
- * @version 1.0
+ * Date: 26 / 07 / 2013
+ * @version 1.1
  * @author Pekka Harjamäki
  */
 
@@ -13,7 +13,6 @@
 	$.fn.slimtable = function( options ) {
 		//
 		var settings = $.extend({
-			createFromTable: true,
 			tableData: null,
 			itemsPerPage: 10,
 			ipp_list: [5,10,20],
@@ -42,19 +41,15 @@
 			table_thead = $(this).find("thead");
 			table_tbody = $(this).find("tbody");
 
-			// If creating slimtable from existing table, we need to find both thead and tbody
-			if(settings.createFromTable && !settings.tableData)
+			// First we need to find both thead and tbody
+			if(table_thead.length == 0 || table_tbody.length == 0)
 			{
-				if(table_thead.length == 0 || table_tbody.length == 0)
-				{
-					console.log("Slimtable: thead/tbody missing from table!");
-					return;
-				}
+				console.log("Slimtable: thead/tbody missing from table!");
+				return;
+			}
 
-				//
-				readTable();
-			}		
-
+			// Read table headers (+data) and add sort bindings
+			readTable();
 			addSortIcons();
 
 			//
@@ -64,11 +59,6 @@
 			//
 			createTable();
 		} );
-
-		/* ******************************************************************* *
-		 * Paging
-		 * ******************************************************************* */
-
 
 		/* ******************************************************************* *
 		 * Add paging div and sort icons
@@ -181,14 +171,19 @@
 				};
 			}
 
-			//
-			table_tbody.find("tr").each(function() {
-				var t_row=new Array();
-				$(this).find("td").each(function() {
-					t_row.push( $(this).html() );
+			// Get data either from table on from array
+			if(!settings.tableData || settings.tableData.length<=0)
+			{
+				table_tbody.find("tr").each(function() {
+					var t_row=new Array();
+					$(this).find("td").each(function() {
+						t_row.push( $(this).html() );
+					});
+					tbl_data.push(t_row);
 				});
-				tbl_data.push(t_row);
-			});
+			} else {
+		    		tbl_data = settings.tableData
+			}		
 		}
 
 		function createTable() {

@@ -2,12 +2,13 @@
 	"name": "slimtable",
 	"title": "jQuery SlimTable",
 	"description": "jQuery plugin to create sortable and pageable table.",
-	"version": "v1.0",
+	"version": "v1.1",
 
 	"keywords": [
 		"table",
 		"sorting",
-		"paging"
+		"paging",
+		"ajax"
 	],
 
 	"author": {
@@ -26,6 +27,6 @@
 	"bugs": "https://github.com/McFizh/slimtable/issues",
 
 	"dependencies": {
-		"jquery": ">=1.9"
+		"jquery": ">=1.8"
 	}
 }
