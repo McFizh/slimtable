@@ -2,7 +2,7 @@
 	"name": "slimtable",
 	"title": "jQuery SlimTable",
 	"description": "jQuery plugin to create sortable and pageable table.",
-	"version": "1.1.0",
+	"version": "1.1.1",
 
 	"keywords": [
 		"table",

@@ -1,7 +1,7 @@
 SlimTable
 =========
 
-SlimTable is a plugin for jQuery, which creates sortable and pageable tables from existing table data. Plugin is quite lightweight, as it only takes 4kB when minified. 
+SlimTable is a plugin for jQuery, which creates sortable and pageable tables from existing table data. Plugin is quite lightweight, as it only takes 4kB when minified (2kB gzipped). 
 
 Official homepage of slimtable:
 http://slimtable.mcfish.org
@@ -27,9 +27,14 @@ Might work with other browsers, but these are the ones that are officially suppo
 
 ### Changelog
 
-+ **v1.1** 26.7.2013
++ **v1.1.1** 28.7.2013
+  - Script crashed if column count differed between headers and data
+  - Float, percentage and currency detection added to sort (see updated example 4)
+
++ **v1.1.0** 26.7.2013
   - Creating table from ajax data now works
   - Lowered jQuery requirement to jQuery 1.8
+
 + **v1.0** 25.7.2013
   - Public release
 

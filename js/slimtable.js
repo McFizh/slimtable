@@ -4,8 +4,8 @@
  * 
  * Licensed under MIT license.
  *
- * Date: 26 / 07 / 2013
- * @version 1.1
+ * Date: 28 / 07 / 2013
+ * @version 1.1.1
  * @author Pekka Harjamäki
  */
 
@@ -48,8 +48,16 @@
 				return;
 			}
 
-			// Read table headers (+data) and add sort bindings
+			// Read table headers + data
 			readTable();
+
+			if(tbl_data.length>0 && col_settings.length != tbl_data[0].length)
+			{
+				console.log("Slimtable: Different number of columns in header and data!");
+				return;
+			}
+
+			// Add sort bindings
 			addSortIcons();
 
 			//
@@ -339,13 +347,41 @@
 		 * ******************************************************************* */
 		function compare_rows(a,b,dir)
 		{
-			var patt_01 = /[^0-9]/g;
+			var patt_01 = /[^0-9]/g,
+			    patt_02 = /[^0-9,\.]/g,
+			    patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/,
+			    tmp_1, tmp_2;
 
 			// Only numbers?
 			if( !patt_01.test(a) )
 				return( compare_numbers(a,b,dir) );
 
+			// Float values?
+			if( !patt_02.test(a) )
+				return( compare_floats(a,b,dir) );
+
+			// Percentage values or prices?
+			if( patt_03.test(a) )
+			{	
+				tmp_1 = RegExp.$1;
+				patt_03.test(b);
+				tmp_2 = RegExp.$1;
+
+				return( compare_floats(tmp_1,tmp_2,dir) );
+			}
+
 			return( compare_strings(a,b,dir) );
+		}
+
+		function compare_floats(a,b,dir)
+		{
+			var a1 = parseFloat(a.replace(",",".")),
+			    b1 = parseFloat(b.replace(",","."));
+
+			if(dir == "asc") 
+				return(a1-b1);
+
+			return(b1-a1);
 		}
 
 		function compare_numbers(a,b,dir)
