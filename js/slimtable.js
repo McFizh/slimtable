@@ -4,8 +4,8 @@
  * 
  * Licensed under MIT license.
  *
- * Date: 28 / 07 / 2013
- * @version 1.1.1
+ * Date: 07 / 08 / 2013
+ * @version 1.1.2
  * @author Pekka Harjamäki
  */
 
@@ -16,7 +16,10 @@
 			tableData: null,
 			itemsPerPage: 10,
 			ipp_list: [5,10,20],
-			colSettings: []
+			colSettings: [],
+			ipp_text: "items/page",
+			sortStartCB: null,
+			sortEndCB: null
 		}, options);
 
 		var col_settings = [],
@@ -106,7 +109,7 @@
 			$(t_obj2).addClass('slimtable-paging-seldiv');
 
 			$(t_obj2).append(selector);
-			$(t_obj2).append("items/page");
+			$(t_obj2).append(settings.ipp_text);
 			$(t_obj1).append(t_obj2);
 
 			// Move table to container div
@@ -272,6 +275,10 @@
 			//
 			e.preventDefault();
 
+			// Execute sort start callback, if one is defined
+			if(settings.sortStartCB && typeof settings.sortStartCB == 'function')
+				settings.sortStartCB.call(this);
+
 			// Shift click
 			if( e.shiftKey )
 			{
@@ -340,6 +347,9 @@
 			//
 			createTable();
 			
+			// Execute sort end callback, if one is defined
+			if(settings.sortEndCB && typeof settings.sortEndCB == 'function')
+				settings.sortEndCB.call(this);
 		}
 
 		/* ******************************************************************* *
