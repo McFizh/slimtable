@@ -4,7 +4,7 @@
  * 
  * Licensed under MIT license.
  *
- * Date: 07 / 08 / 2013
+ * Date: 12 / 08 / 2013
  * @version 1.1.2
  * @author Pekka Harjamäki
  */
@@ -151,22 +151,31 @@
 		/* ******************************************************************* *
 		 * Utils
 		 * ******************************************************************* */
-		function readTable() {
-			var th_list=table_thead.find("th");
+		function readTable() 
+		{
+			var th_list=table_thead.find("th"), l1, l2;
 
 			//
 			col_settings = new Array();
-			for(var l1=0; l1<th_list.length; l1++)
+			for(l1=0; l1<th_list.length; l1++)
 			{
 				var val_sortable = true,
+				    val_strip_html = false,
+				    val_rowtype = -1,
 				    val_xtraclasses = [];
 
 				// has user set any custom settings to columns?
-				for(var l2=0; l2<settings.colSettings.length; l2++)
+				for(l2=0; l2<settings.colSettings.length; l2++)
 				if( settings.colSettings[l2].colNumber == l1 )
 				{
-					if( settings.colSettings[l2].enableSort==false)
+					if( settings.colSettings[l2].enableSort==false )
 						val_sortable = false;
+
+					if( settings.colSettings[l2].stripHtml==true )
+						val_strip_html = true;
+
+					if( settings.colSettings[l2].rowType>=0 )
+						val_rowtype = settings.colSettings[l2].rowType;
 
 					if( settings.colSettings[l2].addClasses && settings.colSettings[l2].addClasses.length>0)
 						val_xtraclasses = settings.colSettings[l2].addClasses;
@@ -178,7 +187,9 @@
 				col_settings[l1]={
 					sortable: val_sortable,
 					classes: val_xtraclasses,
-					sortdir: "asc"
+					strip_html: val_strip_html,
+					sortdir: "asc",
+					rowtype: val_rowtype
 				};
 			}
 
@@ -193,31 +204,45 @@
 					tbl_data.push(t_row);
 				});
 			} else {
-		    		tbl_data = settings.tableData
-			}		
+		    		tbl_data = settings.tableData;
+			}
+			
+			// Determine col types
+			for(l1=0; l1<th_list.length; l1++)
+			if(col_settings[l1].rowtype == -1)
+			{
+				var match_arr=[ 0, 0, 0, 0 ], t_retval;
+
+				for(l2=0; l2<tbl_data.length; l2++)
+				{
+					t_retval = return_row_type(tbl_data[l2][l1], col_settings[l1].strip_html);
+					match_arr[ t_retval ]++;
+				}
+
+				col_settings[l1].rowtype = $.inArray( Math.max.apply(this, match_arr) , match_arr );
+			}
 		}
 
 		function createTable() {
 			var end_pos = parseInt(paging_start)+parseInt(items_per_page),
-			    t_obj1,t_obj2,pages;
+			    t_obj1,t_obj2,pages, l1, l2, l3;
 
 			//
 			table_tbody.empty();
 			end_pos = end_pos > tbl_data.length ? tbl_data.length : end_pos;
 
-
 			//
-			for(var l1=paging_start; l1<end_pos; l1++)
+			for(l1=paging_start; l1<end_pos; l1++)
 			{
 				t_obj1 = document.createElement("tr");
-				for(var l2=0; l2<tbl_data[l1].length; l2++)
+				for(l2=0; l2<tbl_data[l1].length; l2++)
 				{
 					// Create TD element
 					t_obj2 = document.createElement("td");
 					$(t_obj2).html( tbl_data[l1][l2] );
 
 					// Add extra css classes to td
-					for(var l3=0; l3<col_settings[l2].classes.length; l3++)
+					for(l3=0; l3<col_settings[l2].classes.length; l3++)
 						$(t_obj2).addClass(col_settings[l2].classes[l3]);
 
 					// Add td to tr
@@ -230,7 +255,7 @@
 			// Create paging buttons
 			$(table_btn_container).empty();
 			pages = Math.ceil( tbl_data.length / items_per_page );
-			for(var l1=0; l1<pages; l1++)
+			for(l1=0; l1<pages; l1++)
 			{
 				t_obj1 = document.createElement("div");
 				$(t_obj1).addClass("slimtable-page-btn");
@@ -242,6 +267,41 @@
 					
 				$(table_btn_container).append( t_obj1 );
 			}
+		}
+		/* ******************************************************************* *
+		 * 
+		 * ******************************************************************* */
+		function remove_html(data)
+		{
+			var t1 = document.createElement('div');
+			$(t1).html(data);
+			return( $(t1).text() );
+		}
+
+		function return_row_type(data, rm_html)
+		{
+			var patt_01 = /[^0-9]/g,
+			    patt_02 = /[^0-9,\.]/g,
+			    patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/;
+
+			if(rm_html)
+				data = remove_html(data);
+
+			// Given element doesn't containt any other characters than numbers
+			if( !patt_01.test(data) )
+				return(1);
+
+			// Givent element contains only: 0-9 , .
+			if( !patt_02.test(data) )
+				return(2);
+
+			// Float with cleanup
+			if( patt_03.test(data) )
+				return(3);
+
+			// String comparison
+			return(0);
+		
 		}
 
 		/* ******************************************************************* *
@@ -327,90 +387,61 @@
 			//
 			if(sort_list.length>0)
 			tbl_data.sort(function(a,b) {
-				var t1, t2;
+				var t1,ta,tb;
 
 				for(var l1=0; l1<sort_list.length; l1++)
 				{
 					t1 = sort_list[l1];
 
-					if( a[t1] == b[t1] )
-					if( l1 < (sort_list.length-1) )
+					if( a[t1] == b[t1] && l1 < (sort_list.length-1) )
+						continue;
+
+					// Swap variables, if sortdir = ascending
+					if( col_settings[t1].sortdir == 'desc' )
 					{
-						t2 = sort_list[l1+1];
-						return( compare_rows(a[t2] , b[t2] , col_settings[t2].sortdir ) );
+						ta = b[t1]; tb=a[t1];
+					} else {
+						ta = a[t1]; tb=b[t1];
 					}
 
-					return( compare_rows(a[t1] , b[t1] , col_settings[t1].sortdir ) );
+					// Strip html, if requested
+					if( col_settings[t1].strip_html )
+					{
+						 ta = remove_html(ta);
+						 tb = remove_html(tb);
+					}
+
+					// Compare values
+					switch( col_settings[t1].rowtype )
+					{
+						// Pure numeric comparison
+						case 1: 
+							return( ta - tb );
+
+						// Float value comparison
+						case 2: 
+						case 3:
+							ta = parseFloat(ta.replace(",","."));
+							tb = parseFloat(tb.replace(",","."));
+							return( ta - tb );
+
+						// String comparison
+						default: 
+							ta = new String ( ta.toLowerCase() );
+							tb = new String ( tb.toLowerCase() );
+							return ( ta.localeCompare(tb) );
+					}
 				}
+
 			});
 
 			//
 			createTable();
-			
+
 			// Execute sort end callback, if one is defined
 			if(settings.sortEndCB && typeof settings.sortEndCB == 'function')
 				settings.sortEndCB.call(this);
 		}
 
-		/* ******************************************************************* *
-		 * Compare functions
-		 * ******************************************************************* */
-		function compare_rows(a,b,dir)
-		{
-			var patt_01 = /[^0-9]/g,
-			    patt_02 = /[^0-9,\.]/g,
-			    patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/,
-			    tmp_1, tmp_2;
-
-			// Only numbers?
-			if( !patt_01.test(a) )
-				return( compare_numbers(a,b,dir) );
-
-			// Float values?
-			if( !patt_02.test(a) )
-				return( compare_floats(a,b,dir) );
-
-			// Percentage values or prices?
-			if( patt_03.test(a) )
-			{	
-				tmp_1 = RegExp.$1;
-				patt_03.test(b);
-				tmp_2 = RegExp.$1;
-
-				return( compare_floats(tmp_1,tmp_2,dir) );
-			}
-
-			return( compare_strings(a,b,dir) );
-		}
-
-		function compare_floats(a,b,dir)
-		{
-			var a1 = parseFloat(a.replace(",",".")),
-			    b1 = parseFloat(b.replace(",","."));
-
-			if(dir == "asc") 
-				return(a1-b1);
-
-			return(b1-a1);
-		}
-
-		function compare_numbers(a,b,dir)
-		{
-			if(dir == "asc") 
-				return(a-b);
-
-			return(b-a);
-		}
-
-		function compare_strings(a,b,dir)
-		{
-			var s1 = new String ( a.toLowerCase() ),
-			    s2 = new String ( b.toLowerCase() );
-
-			if(dir == "asc" ) 
-				return ( s1.localeCompare(s2) );
-
-			return ( s2.localeCompare(s1) );
-		}
 	}
 }(jQuery));
