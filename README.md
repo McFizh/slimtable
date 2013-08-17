@@ -27,6 +27,9 @@ Might work with other browsers, but these are the ones that are officially suppo
 
 ### Changelog
 
++ **v1.1.3** 18.08.2013
+  - More ajax loading options
+
 + **v1.1.2** 11.8.2013
   - Sort start/end callbacks
   - Option for html stripping content before sorting

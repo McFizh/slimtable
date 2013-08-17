@@ -4,8 +4,8 @@
  * 
  * Licensed under MIT license.
  *
- * Date: 12 / 08 / 2013
- * @version 1.1.2
+ * Date: 18 / 08 / 2013
+ * @version 1.1.3
  * @author Pekka Harjamäki
  */
 
@@ -14,14 +14,21 @@
 		//
 		var settings = $.extend({
 			tableData: null,
+			dataUrl: null,
+
 			itemsPerPage: 10,
 			ipp_list: [5,10,20],
+
 			colSettings: [],
-			ipp_text: "items/page",
+
+			text1: "items/page",
+			text2: "Loading...",
+
 			sortStartCB: null,
 			sortEndCB: null
 		}, options);
 
+		// Private variables
 		var col_settings = [],
 		    sort_list = [],
 		    tbl_data = [],
@@ -29,7 +36,9 @@
 		    table_tbody,
 		    table_btn_container,
 		    paging_start,
-		    items_per_page;
+		    items_per_page,
+		    show_loading,
+		    html_cleaner_div;
 
 		/* ******************************************************************* *
 		 * Main part of the plugin
@@ -38,7 +47,9 @@
 
 			//
 			paging_start = 0;
+			show_loading = false;
 			items_per_page = settings.itemsPerPage;
+			html_cleaner_div = document.createElement('div');
 
 			//
 			table_thead = $(this).find("thead");
@@ -54,28 +65,34 @@
 			// Read table headers + data
 			readTable();
 
-			if(tbl_data.length>0 && col_settings.length != tbl_data[0].length)
-			{
-				console.log("Slimtable: Different number of columns in header and data!");
+			if( show_loading==false && !sanity_check_1() )
 				return;
-			}
 
-			// Add sort bindings
-			addSortIcons();
-
-			//
+			// Add sort bindings & paging buttons
 			$(this).addClass("slimtable");
+			addSortIcons();
 			addPaging( $(this) );
 
 			//
 			createTable();
 		} );
 
+		function sanity_check_1() 
+		{
+			if(tbl_data.length>0 && col_settings.length != tbl_data[0].length)
+			{
+				console.log("Slimtable: Different number of columns in header and data!");
+				return(false);
+			}
+			return(true);
+		}
+
 		/* ******************************************************************* *
 		 * Add paging div and sort icons
 		 * ******************************************************************* */
 		function addPaging( tbl_obj ) {
 			var t_obj1, t_obj2,
+			    option, l1 ,
 			    selector = document.createElement('select');
 
 			//
@@ -83,9 +100,9 @@
 			$(t_obj1).addClass('slimtable-paging-div');
 
 			//
-			for(var l1 = 0 ; l1<settings.ipp_list.length; l1++)
+			for(l1 = 0 ; l1<settings.ipp_list.length; l1++)
 			{
-				var option = document.createElement('option');
+				option = document.createElement('option');
 				option.value=settings.ipp_list[l1];
 				option.text=settings.ipp_list[l1];
 
@@ -95,8 +112,8 @@
 				$(selector).append(option);
 			}
 	
-			$(selector).on('change',handle_ipp_change);
-			$(selector).addClass('slimtable-paging-select');
+			$(selector).on('change',handle_ipp_change).
+				    addClass('slimtable-paging-select');
 
 			// Create container for paging buttons
 			t_obj2 = document.createElement('div');
@@ -109,7 +126,7 @@
 			$(t_obj2).addClass('slimtable-paging-seldiv');
 
 			$(t_obj2).append(selector);
-			$(t_obj2).append(settings.ipp_text);
+			$(t_obj2).append(settings.text1);
 			$(t_obj1).append(t_obj2);
 
 			// Move table to container div
@@ -193,9 +210,26 @@
 				};
 			}
 
-			// Get data either from table on from array
-			if(!settings.tableData || settings.tableData.length<=0)
+			// Get data either from table, pre defined array or ajax url
+			if(settings.dataUrl && settings.dataUrl.length>2) 
 			{
+				show_loading = true;
+				$.ajax({
+					url: settings.dataUrl,
+					dataType: "json"
+				}).done(function(data){
+					tbl_data = data;
+					show_loading = false;
+					determine_col_types();
+					createTable();
+				}).fail(function(par1,par2){
+					console.log("Slimtable: Ajax error: "+par2);
+				});
+
+			} else if(settings.tableData && settings.tableData.length>=0) {
+		    		tbl_data = settings.tableData;
+				determine_col_types();
+			} else {
 				table_tbody.find("tr").each(function() {
 					var t_row=new Array();
 					$(this).find("td").each(function() {
@@ -203,12 +237,16 @@
 					});
 					tbl_data.push(t_row);
 				});
-			} else {
-		    		tbl_data = settings.tableData;
+				determine_col_types();
 			}
-			
+		}
+
+		function determine_col_types()
+		{
+			var th_list=table_thead.find("th");
+
 			// Determine col types
-			for(l1=0; l1<th_list.length; l1++)
+			for(var l1=0; l1<th_list.length; l1++)
 			if(col_settings[l1].rowtype == -1)
 			{
 				var match_arr=[ 0, 0, 0, 0 ], t_retval;
@@ -230,6 +268,7 @@
 			//
 			table_tbody.empty();
 			end_pos = end_pos > tbl_data.length ? tbl_data.length : end_pos;
+			pages = Math.ceil( tbl_data.length / items_per_page );
 
 			//
 			for(l1=paging_start; l1<end_pos; l1++)
@@ -254,13 +293,12 @@
 
 			// Create paging buttons
 			$(table_btn_container).empty();
-			pages = Math.ceil( tbl_data.length / items_per_page );
 			for(l1=0; l1<pages; l1++)
 			{
 				t_obj1 = document.createElement("div");
-				$(t_obj1).addClass("slimtable-page-btn");
-				$(t_obj1).on('click',handle_page_change);
-				$(t_obj1).text(l1+1);
+				$(t_obj1).addClass("slimtable-page-btn").
+					  on('click',handle_page_change).
+					  text(l1+1);
 
 				if( l1*items_per_page == paging_start )
 					$(t_obj1).addClass("active");
@@ -273,9 +311,7 @@
 		 * ******************************************************************* */
 		function remove_html(data)
 		{
-			var t1 = document.createElement('div');
-			$(t1).html(data);
-			return( $(t1).text() );
+			return( $(html_cleaner_div).html(data).text() );
 		}
 
 		function return_row_type(data, rm_html)
@@ -330,6 +366,7 @@
 		function handleHeaderClick(e) {
 			var idx = $(this).index(),
 			    t_item1, t_item2,
+			    l1,
 			    pos = $.inArray(idx,sort_list);
 
 			//
@@ -362,7 +399,7 @@
 			}
 
 			// 
-			for(var l1=0; l1<col_settings.length; l1++)
+			for(l1=0; l1<col_settings.length; l1++)
 			{
 				if( !col_settings[l1] || !col_settings[l1].sortable )
 					continue;
@@ -387,22 +424,25 @@
 			//
 			if(sort_list.length>0)
 			tbl_data.sort(function(a,b) {
-				var t1,ta,tb;
+				var t1,ta,tb,l1,
+				    slist_length=sort_list.length;
 
-				for(var l1=0; l1<sort_list.length; l1++)
+				for(l1=0; l1<slist_length; l1++)
 				{
 					t1 = sort_list[l1];
+					ta = a[t1]; 
+					tb = b[t1];
 
-					if( a[t1] == b[t1] && l1 < (sort_list.length-1) )
+					// Given variables match, move to next sort parameter 
+					if( ta == tb && l1 < (slist_length-1) )
 						continue;
 
 					// Swap variables, if sortdir = ascending
 					if( col_settings[t1].sortdir == 'desc' )
 					{
-						ta = b[t1]; tb=a[t1];
-					} else {
-						ta = a[t1]; tb=b[t1];
-					}
+						ta = b[t1]; 
+						tb = a[t1];
+					} 
 
 					// Strip html, if requested
 					if( col_settings[t1].strip_html )
