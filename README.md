@@ -6,14 +6,9 @@ SlimTable is a plugin for jQuery, which creates sortable and pageable tables fro
 Official homepage of slimtable:
 http://slimtable.mcfish.org
 
-### Supported jQuery versions
+### Supported jQuery version
 
-+ jQuery 1.8.3
-+ jQuery 1.9.1
-+ jQuery 1.10.2
-+ jQuery 2.0.3
-
-Might work with other versions, but these are the ones that plugin is tested against.
++ jQuery >= 1.8
 
 ### Supported browsers
 
@@ -25,7 +20,17 @@ Might work with other versions, but these are the ones that plugin is tested aga
 
 Might work with other browsers, but these are the ones that are officially supported.
 
+### How to build
+
++ npm install -g grunt-cli
++ npm install
++ grunt
+
 ### Changelog
+
++ **v1.2.0** 27.05.2015
+  - Added to bower repository
+  - Grunt is now used to build script
 
 + **v1.1.3** 18.08.2013
   - More ajax loading options
@@ -49,6 +54,4 @@ Might work with other browsers, but these are the ones that are officially suppo
 
 * * *
 
-Pekka Harjamäki / [Celain Oy](http://www.celain.fi/)
-
-
+Pekka Harjamäki

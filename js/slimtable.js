@@ -1,11 +1,9 @@
-/**
- * SlimTable
- * http://slimtable.mcfish.org/
+/*!
+ * slimtable ( http://slimtable.mcfish.org/ )
  * 
  * Licensed under MIT license.
  *
- * Date: 18 / 08 / 2013
- * @version 1.1.3
+ * @version 1.2.0
  * @author Pekka Harjamäki
  */
 

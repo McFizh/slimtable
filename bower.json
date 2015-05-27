@@ -1,0 +1,31 @@
+{
+  "name": "slimtable",
+  "version": "1.2.0",
+  "homepage": "http://slimtable.mcfish.org/",
+  "license": "MIT",
+  "authors": [
+    "Pekka Harjamäki <mcfizh@gmail.com>"
+  ],
+  "description": "jQuery plugin to create sortable and pageable table.",
+  "main": [
+    "js/slimtable.js",
+    "css/slimtable.css"
+  ]
+  "keywords": [
+    "sortable",
+    "table",
+    "ajax",
+    "paging"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/McFizh/slimtable.git"
+  },
+  "dependencies": {
+    "jquery" : ">=1.8.0",
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules"
+  ]
+}
