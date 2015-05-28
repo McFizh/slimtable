@@ -3,7 +3,7 @@
  * 
  * Licensed under MIT license.
  *
- * @version 1.2.1
+ * @version 1.2.2
  * @author Pekka Harjamäki
  */
 
@@ -143,9 +143,8 @@
 				if(col_settings[index] && col_settings[index].sortable)
 				{
 					var obj = document.createElement("span");
-
-					$(obj).addClass("slimtable-sprites");
-					$(obj).attr('unselectable','on');
+					$(obj).attr('unselectable','on').
+						addClass("slimtable-sprites");
 
 					if( col_settings[index].sordir=="asc" )
 					{
@@ -159,6 +158,8 @@
 					$(this). prepend(obj).
 						 css({ cursor: "pointer" }).
 						 on("click",handleHeaderClick);
+				} else {
+					$(this).addClass("slimtable-unsortable")
 				}
 			});
 		}
@@ -218,15 +219,14 @@
 				}).done(function(data){
 					tbl_data = data;
 					show_loading = false;
-					determine_col_types();
 					createTable();
 				}).fail(function(par1,par2){
 					console.log("Slimtable: Ajax error: "+par2);
+					return;
 				});
 
 			} else if(settings.tableData && settings.tableData.length>=0) {
 		    		tbl_data = settings.tableData;
-				determine_col_types();
 			} else {
 				table_tbody.find("tr").each(function() {
 					var t_row=new Array();
@@ -235,27 +235,64 @@
 					});
 					tbl_data.push(t_row);
 				});
-				determine_col_types();
 			}
+
+			//
+			determine_col_types();
 		}
 
 		function determine_col_types()
 		{
-			var th_list=table_thead.find("th");
+			var l1, l2, t1, 
+			    th_list=table_thead.find("th"), 
+			    t_data, match_arr;
 
 			// Determine col types
-			for(var l1=0; l1<th_list.length; l1++)
+			for(l1=0; l1<th_list.length; l1++)
 			if(col_settings[l1].rowtype == -1)
 			{
-				var match_arr=[ 0, 0, 0, 0 ], t_retval;
+				match_arr=[ 0, 0, 0, 0, 0 ];
 
 				for(l2=0; l2<tbl_data.length; l2++)
 				{
-					t_retval = return_row_type(tbl_data[l2][l1], col_settings[l1].strip_html);
-					match_arr[ t_retval ]++;
+					// Remove HTML, TRIM data and create array with cleaned & original data
+					t_data = tbl_data[l2][l1];
+					t_data = [ t_data, t_data ];
+
+					if (col_settings[l1].strip_html)
+						t_data[0] = $(html_cleaner_div).html(data).text();
+
+					t_data[0] = $.trim(t_data[0]);
+					t_data[0] = t_data[0].toLowerCase();
+					tbl_data[l2][l1] = { clean : t_data[0] , orig : t_data[1] };
+
+					// 
+					match_arr[ return_row_type( t_data[0] ) ]++;
 				}
 
 				col_settings[l1].rowtype = $.inArray( Math.max.apply(this, match_arr) , match_arr );
+
+				// Cleanup data bases on type
+				for(l2=0; l2<tbl_data.length; l2++)
+				{
+					if ( col_settings[l1].rowtype == 0 )
+					{
+						tbl_data[l2][l1].clean = new String(tbl_data[l2][l1].clean);
+					}
+
+					// Remove end sign, change , to . and run parsefloat
+					if ( col_settings[l1].rowtype == 2 || col_settings[l1].rowtype == 3 )
+					{
+						tbl_data[l2][l1].clean = parseFloat(tbl_data[l2][l1].clean.replace(",","."));
+					}
+
+					// Convert values to dates
+					if ( col_settings[l1].rowtype == 4 )
+					{
+						t1 = tbl_data[l2][l1].clean.split(/[.\/-]/);
+						tbl_data[l2][l1].clean = new Date ( t1[2], t1[1], t1[0] );
+					}
+				}
 			}
 		}
 
@@ -276,7 +313,7 @@
 				{
 					// Create TD element
 					t_obj2 = document.createElement("td");
-					$(t_obj2).html( tbl_data[l1][l2] );
+					$(t_obj2).html( tbl_data[l1][l2].orig );
 
 					// Add extra css classes to td
 					for(l3=0; l3<col_settings[l2].classes.length; l3++)
@@ -307,31 +344,28 @@
 		/* ******************************************************************* *
 		 * 
 		 * ******************************************************************* */
-		function remove_html(data)
-		{
-			return( $(html_cleaner_div).html(data).text() );
-		}
-
-		function return_row_type(data, rm_html)
+		function return_row_type(data)
 		{
 			var patt_01 = /[^0-9]/g,
-			    patt_02 = /[^0-9,\.]/g,
-			    patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/;
-
-			if(rm_html)
-				data = remove_html(data);
+			    patt_02 = /^[0-9]+([\.,][0-9]+)?$/,
+			    patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/,
+			    patt_04 = /^[0-9]{1,2}[.-\/][0-9]{1,2}[.-\/][0-9]{4}$/;
 
 			// Given element doesn't containt any other characters than numbers
 			if( !patt_01.test(data) )
 				return(1);
 
-			// Givent element contains only: 0-9 , .
-			if( !patt_02.test(data) )
+			// Givent element is most likely float number
+			if( patt_02.test(data) )
 				return(2);
 
 			// Float with cleanup
 			if( patt_03.test(data) )
 				return(3);
+			
+			// Date .. maybe?
+			if( patt_04.test(data) )
+				return(4);
 
 			// String comparison
 			return(0);
@@ -422,53 +456,32 @@
 			//
 			if(sort_list.length>0)
 			tbl_data.sort(function(a,b) {
-				var t1,ta,tb,l1,
+				var t1,ta,tb,l1, t2,
 				    slist_length=sort_list.length;
 
 				for(l1=0; l1<slist_length; l1++)
 				{
 					t1 = sort_list[l1];
-					ta = a[t1]; 
-					tb = b[t1];
+
+					// Swap variables, if sortdir = ascending
+					if( col_settings[t1].sortdir == 'desc' )
+					{
+						ta = b[t1].clean; 
+						tb = a[t1].clean;
+					} else {
+						ta = a[t1].clean; 
+						tb = b[t1].clean;
+					}
 
 					// Given variables match, move to next sort parameter 
 					if( ta == tb && l1 < (slist_length-1) )
 						continue;
 
-					// Swap variables, if sortdir = ascending
-					if( col_settings[t1].sortdir == 'desc' )
-					{
-						ta = b[t1]; 
-						tb = a[t1];
-					} 
-
-					// Strip html, if requested
-					if( col_settings[t1].strip_html )
-					{
-						 ta = remove_html(ta);
-						 tb = remove_html(tb);
-					}
-
 					// Compare values
-					switch( col_settings[t1].rowtype )
-					{
-						// Pure numeric comparison
-						case 1: 
-							return( ta - tb );
-
-						// Float value comparison
-						case 2: 
-						case 3:
-							ta = parseFloat(ta.replace(",","."));
-							tb = parseFloat(tb.replace(",","."));
-							return( ta - tb );
-
-						// String comparison
-						default: 
-							ta = new String ( ta.toLowerCase() );
-							tb = new String ( tb.toLowerCase() );
-							return ( ta.localeCompare(tb) );
-					}
+					if ( col_settings[t1].rowtype == 0 )
+						return ( ta.localeCompare(tb) );
+					else
+						return( ta - tb );
 				}
 
 			});

@@ -27,6 +27,11 @@ Might work with other browsers, but these are the ones that are officially suppo
 
 ### Changelog
 
++ **v1.2.2** - 28.05.2015
+  - Speeded up sorting in some cases
+  - Autodetection for date types (accepted formats: dd.mm.yyyy / dd-mm-yyyy / dd/mm/yyyy )
+  - Columns with sorting disabled get 'slimtable-unsortable' class for header th
+
 + **v1.2.1** - 27.05.2015
   - Small fixes to packaging files
 
