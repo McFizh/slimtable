@@ -3,7 +3,7 @@
  * 
  * Licensed under MIT license.
  *
- * @version 1.2.2
+ * @version 1.2.3
  * @author Pekka Harjamäki
  */
 
@@ -17,6 +17,8 @@
 			itemsPerPage: 10,
 			ipp_list: [5,10,20],
 
+			keepAttrs: [],
+			sortList: [],
 			colSettings: [],
 
 			text1: "items/page",
@@ -72,7 +74,7 @@
 			addPaging( $(this) );
 
 			//
-			createTable();
+			doSorting();
 		} );
 
 		function sanity_check_1() 
@@ -169,32 +171,38 @@
 		 * ******************************************************************* */
 		function readTable() 
 		{
-			var th_list=table_thead.find("th"), l1, l2;
+			var th_list=table_thead.find("th"), l1, l2, l3, t_row, t_obj, t_attr;
 
 			//
-			col_settings = new Array();
+			col_settings = [];
 			for(l1=0; l1<th_list.length; l1++)
 			{
 				var val_sortable = true,
 				    val_strip_html = false,
 				    val_rowtype = -1,
+				    val_sortdir = "asc",
 				    val_xtraclasses = [];
 
 				// has user set any custom settings to columns?
 				for(l2=0; l2<settings.colSettings.length; l2++)
 				if( settings.colSettings[l2].colNumber == l1 )
 				{
-					if( settings.colSettings[l2].enableSort==false )
+					t_obj = settings.colSettings[l2];
+
+					if( t_obj.enableSort==false )
 						val_sortable = false;
 
-					if( settings.colSettings[l2].stripHtml==true )
+					if( t_obj.stripHtml==true )
 						val_strip_html = true;
 
-					if( settings.colSettings[l2].rowType>=0 )
-						val_rowtype = settings.colSettings[l2].rowType;
+					if( t_obj.sortDir == "asc" || t_obj.sortDir == "desc" )
+						val_sortdir = t_obj.sortDir;
 
-					if( settings.colSettings[l2].addClasses && settings.colSettings[l2].addClasses.length>0)
-						val_xtraclasses = settings.colSettings[l2].addClasses;
+					if( t_obj.rowType>=0 )
+						val_rowtype = t_obj.rowType;
+
+					if( t_obj.addClasses && t_obj.addClasses.length>0)
+						val_xtraclasses = t_obj.addClasses;
 
 					break;
 				}
@@ -204,9 +212,15 @@
 					sortable: val_sortable,
 					classes: val_xtraclasses,
 					strip_html: val_strip_html,
-					sortdir: "asc",
+					sortdir: val_sortdir,
 					rowtype: val_rowtype
 				};
+			}
+
+			//
+			if( settings.sortList.length > 0 )
+			{
+				sort_list = settings.sortList;
 			}
 
 			// Get data either from table, pre defined array or ajax url
@@ -219,7 +233,7 @@
 				}).done(function(data){
 					tbl_data = data;
 					show_loading = false;
-					createTable();
+					createTableBody();
 				}).fail(function(par1,par2){
 					console.log("Slimtable: Ajax error: "+par2);
 					return;
@@ -229,9 +243,27 @@
 		    		tbl_data = settings.tableData;
 			} else {
 				table_tbody.find("tr").each(function() {
-					var t_row=new Array();
+					t_row = [];
 					$(this).find("td").each(function() {
-						t_row.push( $(this).html() );
+						t_obj = { orig: $(this).html() , attrs: [] , clean: null };
+
+						// Does td contain sort-data  attr?
+						t_attr = $(this).attr("sort-data");
+						if ( typeof t_attr != "undefined" && t_attr != null )
+						{
+							t_obj.clean = t_attr;
+						}
+
+						// Find attributes to keep
+						for(l3=0; l3<settings.keepAttrs.length; l3++)
+						{
+							t_attr = $(this).attr(settings.keepAttrs[l3]);
+							if ( typeof t_attr != "undefined" )
+							{
+								t_obj.attrs.push({ attr: settings.keepAttrs[l3], value: t_attr});
+							}
+						}
+						t_row.push( t_obj );
 					});
 					tbl_data.push(t_row);
 				});
@@ -245,7 +277,7 @@
 		{
 			var l1, l2, t1, 
 			    th_list=table_thead.find("th"), 
-			    t_data, match_arr;
+			    match_arr;
 
 			// Determine col types
 			for(l1=0; l1<th_list.length; l1++)
@@ -256,18 +288,15 @@
 				for(l2=0; l2<tbl_data.length; l2++)
 				{
 					// Remove HTML, TRIM data and create array with cleaned & original data
-					t_data = tbl_data[l2][l1];
-					t_data = [ t_data, t_data ];
-
-					if (col_settings[l1].strip_html)
-						t_data[0] = $(html_cleaner_div).html(data).text();
-
-					t_data[0] = $.trim(t_data[0]);
-					t_data[0] = t_data[0].toLowerCase();
-					tbl_data[l2][l1] = { clean : t_data[0] , orig : t_data[1] };
+					if ( tbl_data[l2][l1].clean  == null )
+					{
+						tbl_data[l2][l1].clean = col_settings[l1].strip_html ? $(html_cleaner_div).html(tbl_data[l2][l1].orig).text() : tbl_data[l2][l1].orig;
+						tbl_data[l2][l1].clean = $.trim( tbl_data[l2][l1].clean );
+						tbl_data[l2][l1].clean = tbl_data[l2][l1].clean.toLowerCase()
+					}
 
 					// 
-					match_arr[ return_row_type( t_data[0] ) ]++;
+					match_arr[ return_row_type( tbl_data[l2][l1].clean ) ]++;
 				}
 
 				col_settings[l1].rowtype = $.inArray( Math.max.apply(this, match_arr) , match_arr );
@@ -296,7 +325,10 @@
 			}
 		}
 
-		function createTable() {
+		/* ******************************************************************* *
+		 * 
+		 * ******************************************************************* */
+		function createTableBody() {
 			var end_pos = parseInt(paging_start)+parseInt(items_per_page),
 			    t_obj1,t_obj2,pages, l1, l2, l3;
 
@@ -314,6 +346,12 @@
 					// Create TD element
 					t_obj2 = document.createElement("td");
 					$(t_obj2).html( tbl_data[l1][l2].orig );
+
+					// Restore attributes
+					for(l3=0; l3<tbl_data[l1][l2].attrs.length; l3++)
+					{
+						$(t_obj2).attr(tbl_data[l1][l2].attrs[l3].attr, tbl_data[l1][l2].attrs[l3].value);
+					}
 
 					// Add extra css classes to td
 					for(l3=0; l3<col_settings[l2].classes.length; l3++)
@@ -341,6 +379,33 @@
 				$(table_btn_container).append( t_obj1 );
 			}
 		}
+
+		function createTableHead() {
+			var l1, t_item1, t_item2;
+
+			for(l1=0; l1<col_settings.length; l1++)
+			{
+				if( !col_settings[l1] || !col_settings[l1].sortable )
+					continue;
+
+				t_item1 = table_thead.find("th:nth-child("+(l1+1)+")");
+				t_item2 = t_item1.find("span");
+
+				if( $.inArray(l1,sort_list) < 0 )
+				{
+					t_item1.removeClass("slimtable-activeth");
+					t_item2.removeClass("slimtable-sortasc");
+					t_item2.removeClass("slimtable-sortdesc");
+					t_item2.addClass("slimtable-sortboth");
+				} else {
+					t_item2.removeClass("slimtable-sortboth");
+					t_item2.removeClass("slimtable-sort" + (col_settings[l1].sortdir=="asc"?"desc":"asc") );
+					t_item2.addClass("slimtable-sort" + col_settings[l1].sortdir );
+					t_item1.addClass("slimtable-activeth");
+				}
+			}
+		}
+
 		/* ******************************************************************* *
 		 * 
 		 * ******************************************************************* */
@@ -372,6 +437,61 @@
 		
 		}
 
+		function doSorting()
+		{
+			//
+			if(sort_list.length>0)
+			tbl_data.sort(function(a,b) {
+				var t1, ta, tb, l1, t2,
+				    slist_length=sort_list.length,
+				    same_item;
+
+				for(l1=0; l1<slist_length; l1++)
+				{
+					t1 = sort_list[l1];
+
+					// Swap variables, if sortdir = ascending
+					if( col_settings[t1].sortdir == 'desc' )
+					{
+						ta = b[t1].clean; 
+						tb = a[t1].clean;
+					} else {
+						ta = a[t1].clean; 
+						tb = b[t1].clean;
+					}
+
+					// Given variables match, move to next sort parameter
+					same_item = false;
+					if ( col_settings[t1].rowtype == 0 )
+					{
+						if ( ta.localeCompare(tb) == 0 )
+							same_item = true;
+					} else if (col_settings[t1].rowtype == 4 ) {
+						if ( ta - tb == 0 )
+							same_item = true;
+					} else { 
+						if (ta == tb)
+							same_item = true;
+					}
+
+					//
+					if( same_item && l1 < (slist_length-1) )
+						continue;
+
+					// Compare values
+					if ( col_settings[t1].rowtype == 0 )
+						return( ta.localeCompare(tb) );
+					else
+						return( ta - tb );
+				}
+
+			});
+
+			//
+			createTableHead();
+			createTableBody();
+		}
+
 		/* ******************************************************************* *
 		 * Events
 		 * ******************************************************************* */
@@ -384,20 +504,17 @@
 
 			paging_start = num*items_per_page;
 
-			createTable();
+			createTableBody();
 		}
 
 		function handle_ipp_change(e) {
-			var ipp = this.value;
-
 			items_per_page = this.value;
 			paging_start = 0;
-			createTable();
+			createTableBody();
 		}
 
 		function handleHeaderClick(e) {
 			var idx = $(this).index(),
-			    t_item1, t_item2,
 			    l1,
 			    pos = $.inArray(idx,sort_list);
 
@@ -430,64 +547,9 @@
 				}
 			}
 
-			// 
-			for(l1=0; l1<col_settings.length; l1++)
-			{
-				if( !col_settings[l1] || !col_settings[l1].sortable )
-					continue;
-
-				t_item1 = table_thead.find("th:nth-child("+(l1+1)+")");
-				t_item2 = t_item1.find("span");
-
-				if( $.inArray(l1,sort_list) < 0 )
-				{
-					t_item1.removeClass("slimtable-activeth");
-					t_item2.removeClass("slimtable-sortasc");
-					t_item2.removeClass("slimtable-sortdesc");
-					t_item2.addClass("slimtable-sortboth");
-				} else {
-					t_item2.removeClass("slimtable-sortboth");
-					t_item2.removeClass("slimtable-sort" + (col_settings[l1].sortdir=="asc"?"desc":"asc") );
-					t_item2.addClass("slimtable-sort" + col_settings[l1].sortdir );
-					t_item1.addClass("slimtable-activeth");
-				}
-			}
 
 			//
-			if(sort_list.length>0)
-			tbl_data.sort(function(a,b) {
-				var t1,ta,tb,l1, t2,
-				    slist_length=sort_list.length;
-
-				for(l1=0; l1<slist_length; l1++)
-				{
-					t1 = sort_list[l1];
-
-					// Swap variables, if sortdir = ascending
-					if( col_settings[t1].sortdir == 'desc' )
-					{
-						ta = b[t1].clean; 
-						tb = a[t1].clean;
-					} else {
-						ta = a[t1].clean; 
-						tb = b[t1].clean;
-					}
-
-					// Given variables match, move to next sort parameter 
-					if( ta == tb && l1 < (slist_length-1) )
-						continue;
-
-					// Compare values
-					if ( col_settings[t1].rowtype == 0 )
-						return ( ta.localeCompare(tb) );
-					else
-						return( ta - tb );
-				}
-
-			});
-
-			//
-			createTable();
+			doSorting();
 
 			// Execute sort end callback, if one is defined
 			if(settings.sortEndCB && typeof settings.sortEndCB == 'function')
