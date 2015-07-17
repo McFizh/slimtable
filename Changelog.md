@@ -1,5 +1,8 @@
 ### Changelog
 
++ **v1.2.4** - 17.7.2015
+  - Fixed packing files.. once again
+
 + **v1.2.3** - 3.6.2015
   - Library target size increased from 5kB to 6kB :(
   - Added preserve td attributes functionality

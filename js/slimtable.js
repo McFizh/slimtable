@@ -3,7 +3,7 @@
  * 
  * Licensed under MIT license.
  *
- * @version 1.2.3
+ * @version 1.2.4
  * @author Pekka Harjamäki
  */
 
