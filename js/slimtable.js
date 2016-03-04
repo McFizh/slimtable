@@ -1,9 +1,9 @@
 /*!
  * slimtable ( http://slimtable.mcfish.org/ )
- * 
+ *
  * Licensed under MIT license.
  *
- * @version 1.2.4
+ * @version 1.2.5
  * @author Pekka Harjamäki
  */
 
@@ -56,16 +56,16 @@
 			table_tbody = $(this).find("tbody");
 
 			// First we need to find both thead and tbody
-			if(table_thead.length == 0 || table_tbody.length == 0)
+			if(table_thead.length === 0 || table_tbody.length === 0)
 			{
-				console.log("Slimtable: thead/tbody missing from table!");
+				showError("thead/tbody missing from table!");
 				return;
 			}
 
 			// Read table headers + data
 			readTable();
 
-			if( show_loading==false && !sanity_check_1() )
+			if( show_loading === false && !sanityCheck1() )
 				return;
 
 			// Add sort bindings & paging buttons
@@ -77,11 +77,11 @@
 			doSorting();
 		} );
 
-		function sanity_check_1() 
+		function sanityCheck1() 
 		{
 			if(tbl_data.length>0 && col_settings.length != tbl_data[0].length)
 			{
-				console.log("Slimtable: Different number of columns in header and data!");
+				showError("Different number of columns in header and data!");
 				return(false);
 			}
 			return(true);
@@ -161,7 +161,7 @@
 						 css({ cursor: "pointer" }).
 						 on("click",handleHeaderClick);
 				} else {
-					$(this).addClass("slimtable-unsortable")
+					$(this).addClass("slimtable-unsortable");
 				}
 			});
 		}
@@ -171,7 +171,9 @@
 		 * ******************************************************************* */
 		function readTable() 
 		{
-			var th_list=table_thead.find("th"), l1, l2, l3, t_row, t_obj, t_attr;
+			var th_list=table_thead.find("th"), 
+				l1, l2, l3, 
+				t_row, t_obj, t_attr, match_arr;
 
 			//
 			col_settings = [];
@@ -189,10 +191,10 @@
 				{
 					t_obj = settings.colSettings[l2];
 
-					if( t_obj.enableSort==false )
+					if( t_obj.enableSort === false )
 						val_sortable = false;
 
-					if( t_obj.stripHtml==true )
+					if( t_obj.stripHtml === true )
 						val_strip_html = true;
 
 					if( t_obj.sortDir == "asc" || t_obj.sortDir == "desc" )
@@ -232,15 +234,25 @@
 					dataType: "json"
 				}).done(function(data){
 					tbl_data = data;
+
+					for(l1=0; l1<tbl_data.length; l1++)
+					for(l2=0; l2<tbl_data[l1].length; l2++)
+						tbl_data[l1][l2] = { orig: tbl_data[l1][l2], attrs: [], clean: null };
+
 					show_loading = false;
 					createTableBody();
 				}).fail(function(par1,par2){
-					console.log("Slimtable: Ajax error: "+par2);
+					showError("Ajax error: "+par2);
 					return;
 				});
 
 			} else if(settings.tableData && settings.tableData.length>=0) {
+
 		    		tbl_data = settings.tableData;
+					for(l1=0; l1<tbl_data.length; l1++)
+					for(l2=0; l2<tbl_data[l1].length; l2++)
+						tbl_data[l1][l2] = { orig: tbl_data[l1][l2], attrs: [], clean: null };
+
 			} else {
 				table_tbody.find("tr").each(function() {
 					t_row = [];
@@ -249,7 +261,7 @@
 
 						// Does td contain sort-data  attr?
 						t_attr = $(this).attr("sort-data");
-						if ( typeof t_attr != "undefined" && t_attr != null )
+						if ( typeof t_attr != "undefined" && t_attr !== null )
 						{
 							t_obj.clean = t_attr;
 						}
@@ -270,33 +282,30 @@
 			}
 
 			//
-			determine_col_types();
-		}
+			if(tbl_data.length>0 && col_settings.length != tbl_data[0].length)
+				return;
 
-		function determine_col_types()
-		{
-			var l1, l2, t1, 
-			    th_list=table_thead.find("th"), 
-			    match_arr;
-
-			// Determine col types
+			/*********************** Determine col types ***********************/
+ 
 			for(l1=0; l1<th_list.length; l1++)
-			if(col_settings[l1].rowtype == -1)
 			{
+				if(col_settings[l1].rowtype != -1)
+					continue;
+
 				match_arr=[ 0, 0, 0, 0, 0 ];
 
 				for(l2=0; l2<tbl_data.length; l2++)
-				{
+				{	
 					// Remove HTML, TRIM data and create array with cleaned & original data
-					if ( tbl_data[l2][l1].clean  == null )
+					t_obj = tbl_data[l2][l1].clean;
+					if ( t_obj === null )
 					{
-						tbl_data[l2][l1].clean = col_settings[l1].strip_html ? $(html_cleaner_div).html(tbl_data[l2][l1].orig).text() : tbl_data[l2][l1].orig;
-						tbl_data[l2][l1].clean = $.trim( tbl_data[l2][l1].clean );
-						tbl_data[l2][l1].clean = tbl_data[l2][l1].clean.toLowerCase()
+						t_obj = col_settings[l1].strip_html ? $(html_cleaner_div).html(tbl_data[l2][l1].orig).text() : tbl_data[l2][l1].orig;
+						t_obj = $.trim(t_obj).toLowerCase();
+						tbl_data[l2][l1].clean = t_obj;
 					}
 
-					// 
-					match_arr[ return_row_type( tbl_data[l2][l1].clean ) ]++;
+					match_arr[ return_row_type( t_obj ) ]++;
 				}
 
 				col_settings[l1].rowtype = $.inArray( Math.max.apply(this, match_arr) , match_arr );
@@ -304,9 +313,9 @@
 				// Cleanup data bases on type
 				for(l2=0; l2<tbl_data.length; l2++)
 				{
-					if ( col_settings[l1].rowtype == 0 )
+					if ( col_settings[l1].rowtype === 0 )
 					{
-						tbl_data[l2][l1].clean = new String(tbl_data[l2][l1].clean);
+						tbl_data[l2][l1].clean = String(tbl_data[l2][l1].clean);
 					}
 
 					// Remove end sign, change , to . and run parsefloat
@@ -462,12 +471,12 @@
 
 					// Given variables match, move to next sort parameter
 					same_item = false;
-					if ( col_settings[t1].rowtype == 0 )
+					if ( col_settings[t1].rowtype === 0 )
 					{
-						if ( ta.localeCompare(tb) == 0 )
+						if ( ta.localeCompare(tb) === 0 )
 							same_item = true;
 					} else if (col_settings[t1].rowtype == 4 ) {
-						if ( ta - tb == 0 )
+						if ( ta - tb === 0 )
 							same_item = true;
 					} else { 
 						if (ta == tb)
@@ -479,7 +488,7 @@
 						continue;
 
 					// Compare values
-					if ( col_settings[t1].rowtype == 0 )
+					if ( col_settings[t1].rowtype === 0 )
 						return( ta.localeCompare(tb) );
 					else
 						return( ta - tb );
@@ -490,6 +499,10 @@
 			//
 			createTableHead();
 			createTableBody();
+		}
+
+		function showError(msg) {
+			console.log("Slimtable: "+msg);
 		}
 
 		/* ******************************************************************* *
@@ -556,5 +569,5 @@
 				settings.sortEndCB.call(this);
 		}
 
-	}
+	};
 }(jQuery));
