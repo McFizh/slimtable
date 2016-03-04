@@ -1,6 +1,7 @@
 language: node_js
+sudo: required
 node_js:
   - "4.1"
 before_script:
-  - npm install -g grunt
+  - sudo npm install -g grunt-cli
 script: grunt test
