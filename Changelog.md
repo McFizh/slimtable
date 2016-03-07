@@ -1,5 +1,8 @@
 ### Changelog
 
++ **v1.2.6** - 7.3.2016
+  - Now rows (tr in tbody) can also preserve attributes
+
 + **v1.2.5** - 4.3.2016
   - Fixed problem with parsing json data
   - Updated packages needed to build minified js

@@ -3,7 +3,7 @@
  *
  * Licensed under MIT license.
  *
- * @version 1.2.5
+ * @version 1.2.6
  * @author Pekka Harjamäki
  */
 
@@ -48,7 +48,7 @@
 			//
 			paging_start = 0;
 			show_loading = false;
-			items_per_page = settings.itemsPerPage;
+			items_per_page = parseInt(settings.itemsPerPage);
 			html_cleaner_div = document.createElement('div');
 
 			//
@@ -66,7 +66,10 @@
 			readTable();
 
 			if( show_loading === false && !sanityCheck1() )
+			{
+				showError("Different number of columns in header and data!");
 				return;
+			}
 
 			// Add sort bindings & paging buttons
 			$(this).addClass("slimtable");
@@ -79,11 +82,9 @@
 
 		function sanityCheck1() 
 		{
-			if(tbl_data.length>0 && col_settings.length != tbl_data[0].length)
-			{
-				showError("Different number of columns in header and data!");
+			if( tbl_data.length > 0 && col_settings.length != tbl_data[0].data.length )
 				return(false);
-			}
+
 			return(true);
 		}
 
@@ -91,67 +92,70 @@
 		 * Add paging div and sort icons
 		 * ******************************************************************* */
 		function addPaging( tbl_obj ) {
-			var t_obj1, t_obj2,
-			    option, l1 ,
-			    selector = document.createElement('select');
+			var t_obj1, t_obj2, l1 ,
+			    selector;
 
 			//
-			t_obj1 = document.createElement('div');
-			$(t_obj1).addClass('slimtable-paging-div');
+			selector = $("<select></select>").
+				addClass('slimtable-paging-select').
+				on('change',handle_ipp_change);
 
-			//
 			for(l1 = 0 ; l1<settings.ipp_list.length; l1++)
 			{
-				option = document.createElement('option');
-				option.value=settings.ipp_list[l1];
-				option.text=settings.ipp_list[l1];
+				t_obj1 = settings.ipp_list[l1];
+				t_obj2 = $("<option></option>").val(t_obj1).text(t_obj1);
 
-				if(option.value == settings.itemsPerPage)
-					option.selected = true;
+				if( t_obj1 == settings.itemsPerPage )
+					t_obj2.attr("selected","selected");
 
-				$(selector).append(option);
+				$(selector).append(t_obj2);
 			}
 	
-			$(selector).on('change',handle_ipp_change).
-				    addClass('slimtable-paging-select');
 
 			// Create container for paging buttons
 			t_obj2 = document.createElement('div');
 			$(t_obj2).addClass('slimtable-paging-btnsdiv');
-			$(t_obj1).append(t_obj2);
 			table_btn_container = t_obj2;
 
-			// Create container for select
-			t_obj2 = document.createElement('div');
-			$(t_obj2).addClass('slimtable-paging-seldiv');
+			//
+			t_obj1 = $("<div></div>").
+				addClass('slimtable-paging-div').
+				append(t_obj2);
 
-			$(t_obj2).append(selector);
-			$(t_obj2).append(settings.text1);
+			// Create container for select
+			t_obj2 = $("<div></div>").
+				addClass('slimtable-paging-seldiv').
+				append(selector).
+				append(settings.text1);
 			$(t_obj1).append(t_obj2);
 
 			// Move table to container div
-			t_obj2 = document.createElement('div');
-			$(t_obj2).addClass('slimtable-container-div');
+			t_obj2 = $("<div></div>").
+				addClass('slimtable-container-div').
+				append(t_obj1);
 
-			$(t_obj2).append(t_obj1);
 			tbl_obj.before(t_obj2);
 			tbl_obj.insertBefore(t_obj1);
 		}
 
 		function addSortIcons() {
+			var t_colSettings;
+
 			table_thead.find("th").each(function(index) {
 				$(this).attr('unselectable','on');
 
-				if(col_settings[index] && col_settings[index].sortable)
+				t_colSettings = col_settings[index];
+
+				if(t_colSettings && t_colSettings.sortable)
 				{
 					var obj = document.createElement("span");
 					$(obj).attr('unselectable','on').
 						addClass("slimtable-sprites");
 
-					if( col_settings[index].sordir=="asc" )
+					if( t_colSettings.sortDir=="asc" )
 					{
 						$(obj).addClass("slimtable-sortasc");
-					} else if( col_settings[index].sordir=="desc" ) {
+					} else if( t_colSettings.sortDir=="desc" ) {
 						$(obj).addClass("slimtable-sortdesc");
 					} else {
 						$(obj).addClass("slimtable-sortboth");
@@ -169,76 +173,75 @@
 		/* ******************************************************************* *
 		 * Utils
 		 * ******************************************************************* */
+		function processData(data)
+		{
+			tbl_data = [];
+
+			for(l1=0; l1<data.length; l1++)
+			{
+				t_row = { data: [] , attrs: [] };
+				for(l2=0; l2<data[l1].length; l2++)
+					t_row.data.push( { orig: data[l1][l2], attrs: [], clean: null } );
+				tbl_data.push(t_row);
+			}
+		}
+
 		function readTable() 
 		{
 			var th_list=table_thead.find("th"), 
-				l1, l2, l3, 
+				l1, l2, t_val, 
 				t_row, t_obj, t_attr, match_arr;
 
 			//
 			col_settings = [];
 			for(l1=0; l1<th_list.length; l1++)
 			{
-				var val_sortable = true,
-				    val_strip_html = false,
-				    val_rowtype = -1,
-				    val_sortdir = "asc",
-				    val_xtraclasses = [];
+				col_settings[l1]={
+					sortable: true,
+					classes: [],
+					stripHtml: false,
+					sortDir: "asc",
+					rowType: -1
+				};
 
 				// has user set any custom settings to columns?
 				for(l2=0; l2<settings.colSettings.length; l2++)
-				if( settings.colSettings[l2].colNumber == l1 )
 				{
 					t_obj = settings.colSettings[l2];
+					if( t_obj.colNumber != l1 )
+						continue;
 
 					if( t_obj.enableSort === false )
-						val_sortable = false;
+						col_settings[l1].sortable = false;
 
 					if( t_obj.stripHtml === true )
-						val_strip_html = true;
+						col_settings[l1].stripHtml = true;
 
 					if( t_obj.sortDir == "asc" || t_obj.sortDir == "desc" )
-						val_sortdir = t_obj.sortDir;
+						col_settings[l1].sortDir = t_obj.sortDir;
 
-					if( t_obj.rowType>=0 )
-						val_rowtype = t_obj.rowType;
+					if( t_obj.rowType >= 0 )
+						col_settings[l1].rowType = t_obj.rowType;
 
 					if( t_obj.addClasses && t_obj.addClasses.length>0)
-						val_xtraclasses = t_obj.addClasses;
+						col_settings[l1].classes = t_obj.addClasses;
 
 					break;
 				}
-
-				//
-				col_settings[l1]={
-					sortable: val_sortable,
-					classes: val_xtraclasses,
-					strip_html: val_strip_html,
-					sortdir: val_sortdir,
-					rowtype: val_rowtype
-				};
 			}
 
 			//
-			if( settings.sortList.length > 0 )
-			{
-				sort_list = settings.sortList;
-			}
+			sort_list = ( settings.sortList.length > 0 ) ? settings.sortList : [];
 
 			// Get data either from table, pre defined array or ajax url
-			if(settings.dataUrl && settings.dataUrl.length>2) 
+			if( settings.dataUrl && settings.dataUrl.length > 2 ) 
 			{
 				show_loading = true;
 				$.ajax({
 					url: settings.dataUrl,
 					dataType: "json"
 				}).done(function(data){
-					tbl_data = data;
-
-					for(l1=0; l1<tbl_data.length; l1++)
-					for(l2=0; l2<tbl_data[l1].length; l2++)
-						tbl_data[l1][l2] = { orig: tbl_data[l1][l2], attrs: [], clean: null };
-
+					processData(data);
 					show_loading = false;
 					createTableBody();
 				}).fail(function(par1,par2){
@@ -248,87 +251,96 @@
 
 			} else if(settings.tableData && settings.tableData.length>=0) {
 
-		    		tbl_data = settings.tableData;
-					for(l1=0; l1<tbl_data.length; l1++)
-					for(l2=0; l2<tbl_data[l1].length; l2++)
-						tbl_data[l1][l2] = { orig: tbl_data[l1][l2], attrs: [], clean: null };
+				processData(settings.tableData);
 
 			} else {
 				table_tbody.find("tr").each(function() {
-					t_row = [];
+					t_row = { data: [], attrs: [] };
+
+					for(l1=0; l1<settings.keepAttrs.length; l1++)
+					{
+						t_val = settings.keepAttrs[l1];
+						t_attr = $(this).attr(t_val);
+						if ( typeof t_attr != "undefined" )
+							t_row.attrs.push({ attr: t_val, value: t_attr});
+					}
+
 					$(this).find("td").each(function() {
 						t_obj = { orig: $(this).html() , attrs: [] , clean: null };
 
 						// Does td contain sort-data  attr?
 						t_attr = $(this).attr("sort-data");
 						if ( typeof t_attr != "undefined" && t_attr !== null )
-						{
 							t_obj.clean = t_attr;
-						}
 
 						// Find attributes to keep
-						for(l3=0; l3<settings.keepAttrs.length; l3++)
+						for(l1=0; l1<settings.keepAttrs.length; l1++)
 						{
-							t_attr = $(this).attr(settings.keepAttrs[l3]);
+							t_val = settings.keepAttrs[l1];
+							t_attr = $(this).attr(t_val);
 							if ( typeof t_attr != "undefined" )
-							{
-								t_obj.attrs.push({ attr: settings.keepAttrs[l3], value: t_attr});
-							}
+								t_obj.attrs.push({ attr: t_val, value: t_attr});
 						}
-						t_row.push( t_obj );
+						t_row.data.push( t_obj );
 					});
+
 					tbl_data.push(t_row);
 				});
 			}
 
 			//
-			if(tbl_data.length>0 && col_settings.length != tbl_data[0].length)
+			if(!sanityCheck1())
 				return;
 
 			/*********************** Determine col types ***********************/
  
 			for(l1=0; l1<th_list.length; l1++)
 			{
-				if(col_settings[l1].rowtype != -1)
-					continue;
-
 				match_arr=[ 0, 0, 0, 0, 0 ];
 
-				for(l2=0; l2<tbl_data.length; l2++)
-				{	
-					// Remove HTML, TRIM data and create array with cleaned & original data
-					t_obj = tbl_data[l2][l1].clean;
-					if ( t_obj === null )
-					{
-						t_obj = col_settings[l1].strip_html ? $(html_cleaner_div).html(tbl_data[l2][l1].orig).text() : tbl_data[l2][l1].orig;
-						t_obj = $.trim(t_obj).toLowerCase();
-						tbl_data[l2][l1].clean = t_obj;
+				if(col_settings[l1].rowType == -1)
+				{
+					for(l2=0; l2<tbl_data.length; l2++)
+					{	
+						// Remove HTML, TRIM data and create array with cleaned & original data
+						t_obj = tbl_data[l2].data[l1];
+						if ( t_obj.clean === null )
+						{
+							t_obj = col_settings[l1].stripHtml ? $(html_cleaner_div).html(t_obj.orig).text() : t_obj.orig;
+							t_obj = $.trim(t_obj).toLowerCase();
+							tbl_data[l2].data[l1].clean = t_obj;
+						} else {
+							t_obj = t_obj.clean;
+						}
+
+						match_arr[ return_row_type( t_obj ) ]++;
 					}
 
-					match_arr[ return_row_type( t_obj ) ]++;
+					col_settings[l1].rowType = $.inArray( Math.max.apply(this, match_arr) , match_arr );
 				}
-
-				col_settings[l1].rowtype = $.inArray( Math.max.apply(this, match_arr) , match_arr );
 
 				// Cleanup data bases on type
 				for(l2=0; l2<tbl_data.length; l2++)
 				{
-					if ( col_settings[l1].rowtype === 0 )
+					t_attr = col_settings[l1].rowType;
+					t_obj = tbl_data[l2].data[l1].clean;
+
+					if ( t_attr === 0 )
 					{
-						tbl_data[l2][l1].clean = String(tbl_data[l2][l1].clean);
+						tbl_data[l2].data[l1].clean = String(t_obj);
 					}
 
 					// Remove end sign, change , to . and run parsefloat
-					if ( col_settings[l1].rowtype == 2 || col_settings[l1].rowtype == 3 )
+					if ( t_attr == 2 || t_attr == 3 )
 					{
-						tbl_data[l2][l1].clean = parseFloat(tbl_data[l2][l1].clean.replace(",","."));
+						tbl_data[l2].data[l1].clean = parseFloat(t_obj.replace(",","."));
 					}
 
 					// Convert values to dates
-					if ( col_settings[l1].rowtype == 4 )
+					if ( t_attr == 4 )
 					{
-						t1 = tbl_data[l2][l1].clean.split(/[.\/-]/);
-						tbl_data[l2][l1].clean = new Date ( t1[2], t1[1], t1[0] );
+						t1 = t_obj.split(/[.\/-]/);
+						tbl_data[l2].data[l1].clean = new Date ( t1[2], t1[1], t1[0] );
 					}
 				}
 			}
@@ -338,29 +350,35 @@
 		 * 
 		 * ******************************************************************* */
 		function createTableBody() {
-			var end_pos = parseInt(paging_start)+parseInt(items_per_page),
-			    t_obj1,t_obj2,pages, l1, l2, l3;
+			var end_pos = paging_start+items_per_page,
+			    t_cobj, t_obj1, t_obj2,
+			    pages = Math.ceil( tbl_data.length / items_per_page ), 
+			    l1, l2, l3;
 
 			//
 			table_tbody.empty();
 			end_pos = end_pos > tbl_data.length ? tbl_data.length : end_pos;
-			pages = Math.ceil( tbl_data.length / items_per_page );
 
 			//
 			for(l1=paging_start; l1<end_pos; l1++)
 			{
-				t_obj1 = document.createElement("tr");
-				for(l2=0; l2<tbl_data[l1].length; l2++)
+				t_obj1 = $("<tr></tr>");
+
+				// Restore attributes to TR
+				for(l3=0; l3<tbl_data[l1].attrs.length; l3++)
+					$(t_obj1).attr(tbl_data[l1].attrs[l3].attr, tbl_data[l1].attrs[l3].value);
+
+				// Create TD elements
+				for(l2=0; l2<tbl_data[l1].data.length; l2++)
 				{
+					t_cobj = tbl_data[l1].data[l2];
+
 					// Create TD element
-					t_obj2 = document.createElement("td");
-					$(t_obj2).html( tbl_data[l1][l2].orig );
+					t_obj2 = $("<td></td>").html(t_cobj.orig);
 
 					// Restore attributes
-					for(l3=0; l3<tbl_data[l1][l2].attrs.length; l3++)
-					{
-						$(t_obj2).attr(tbl_data[l1][l2].attrs[l3].attr, tbl_data[l1][l2].attrs[l3].value);
-					}
+					for(l3=0; l3<t_cobj.attrs.length; l3++)
+						$(t_obj2).attr(t_cobj.attrs[l3].attr, t_cobj.attrs[l3].value);
 
 					// Add extra css classes to td
 					for(l3=0; l3<col_settings[l2].classes.length; l3++)
@@ -403,14 +421,14 @@
 				if( $.inArray(l1,sort_list) < 0 )
 				{
 					t_item1.removeClass("slimtable-activeth");
-					t_item2.removeClass("slimtable-sortasc");
-					t_item2.removeClass("slimtable-sortdesc");
-					t_item2.addClass("slimtable-sortboth");
+					t_item2.removeClass("slimtable-sortasc").
+						removeClass("slimtable-sortdesc").
+						addClass("slimtable-sortboth");
 				} else {
-					t_item2.removeClass("slimtable-sortboth");
-					t_item2.removeClass("slimtable-sort" + (col_settings[l1].sortdir=="asc"?"desc":"asc") );
-					t_item2.addClass("slimtable-sort" + col_settings[l1].sortdir );
 					t_item1.addClass("slimtable-activeth");
+					t_item2.removeClass("slimtable-sortboth").
+						removeClass("slimtable-sort" + (col_settings[l1].sortDir=="asc"?"desc":"asc") ).
+						addClass("slimtable-sort" + col_settings[l1].sortDir );
 				}
 			}
 		}
@@ -451,7 +469,7 @@
 			//
 			if(sort_list.length>0)
 			tbl_data.sort(function(a,b) {
-				var t1, ta, tb, l1, t2,
+				var t1, ta, tb, l1,
 				    slist_length=sort_list.length,
 				    same_item;
 
@@ -460,22 +478,22 @@
 					t1 = sort_list[l1];
 
 					// Swap variables, if sortdir = ascending
-					if( col_settings[t1].sortdir == 'desc' )
+					if( col_settings[t1].sortDir == 'desc' )
 					{
-						ta = b[t1].clean; 
-						tb = a[t1].clean;
+						ta = b.data[t1].clean; 
+						tb = a.data[t1].clean;
 					} else {
-						ta = a[t1].clean; 
-						tb = b[t1].clean;
+						ta = a.data[t1].clean; 
+						tb = b.data[t1].clean;
 					}
 
 					// Given variables match, move to next sort parameter
 					same_item = false;
-					if ( col_settings[t1].rowtype === 0 )
+					if ( col_settings[t1].rowType === 0 )
 					{
 						if ( ta.localeCompare(tb) === 0 )
 							same_item = true;
-					} else if (col_settings[t1].rowtype == 4 ) {
+					} else if (col_settings[t1].rowType == 4 ) {
 						if ( ta - tb === 0 )
 							same_item = true;
 					} else { 
@@ -488,7 +506,7 @@
 						continue;
 
 					// Compare values
-					if ( col_settings[t1].rowtype === 0 )
+					if ( col_settings[t1].rowType === 0 )
 						return( ta.localeCompare(tb) );
 					else
 						return( ta - tb );
@@ -515,13 +533,12 @@
 			if(num<0 || num>=pages)
 				return;
 
-			paging_start = num*items_per_page;
-
+			paging_start = parseInt(num*items_per_page);
 			createTableBody();
 		}
 
 		function handle_ipp_change(e) {
-			items_per_page = this.value;
+			items_per_page = parseInt(this.value);
 			paging_start = 0;
 			createTableBody();
 		}
@@ -544,19 +561,19 @@
 				if( pos < 0 )
 				{
 					sort_list.push( idx );
-					col_settings[idx].sortdir = "asc";
+					col_settings[idx].sortDir = "asc";
 				} else {
-					if(col_settings[idx].sortdir=="asc")	col_settings[idx].sortdir = "desc";
-					else					col_settings[idx].sortdir = "asc";
+					if(col_settings[idx].sortDir=="asc")	col_settings[idx].sortDir = "desc";
+					else					col_settings[idx].sortDir = "asc";
 				}
 			} else {
 				sort_list = [ idx ];
 				if( pos < 0 )
 				{
-					col_settings[idx].sortdir = "asc";
+					col_settings[idx].sortDir = "asc";
 				} else {
-					if(col_settings[idx].sortdir=="asc")	col_settings[idx].sortdir = "desc";
-					else					col_settings[idx].sortdir = "asc";
+					if(col_settings[idx].sortDir=="asc")	col_settings[idx].sortDir = "desc";
+					else					col_settings[idx].sortDir = "asc";
 				}
 			}
 
