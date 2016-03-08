@@ -3,7 +3,7 @@
  *
  * Licensed under MIT license.
  *
- * @version 1.2.6
+ * @version 1.2.7
  * @author Pekka Harjamäki
  */
 
@@ -175,6 +175,8 @@
 		 * ******************************************************************* */
 		function processData(data)
 		{
+			var l1, l2,  t_row;
+      
 			tbl_data = [];
 
 			for(l1=0; l1<data.length; l1++)
@@ -304,6 +306,7 @@
 					{	
 						// Remove HTML, TRIM data and create array with cleaned & original data
 						t_obj = tbl_data[l2].data[l1];
+            
 						if ( t_obj.clean === null )
 						{
 							t_obj = col_settings[l1].stripHtml ? $(html_cleaner_div).html(t_obj.orig).text() : t_obj.orig;
@@ -313,7 +316,9 @@
 							t_obj = t_obj.clean;
 						}
 
-						match_arr[ return_row_type( t_obj ) ]++;
+						t_attr = returnRowType( t_obj );
+						if(t_attr > 0)
+						  match_arr[ t_attr ]++;
 					}
 
 					col_settings[l1].rowType = $.inArray( Math.max.apply(this, match_arr) , match_arr );
@@ -339,8 +344,8 @@
 					// Convert values to dates
 					if ( t_attr == 4 )
 					{
-						t1 = t_obj.split(/[.\/-]/);
-						tbl_data[l2].data[l1].clean = new Date ( t1[2], t1[1], t1[0] );
+						t_obj = t_obj.split(/[.\/-]/);
+						tbl_data[l2].data[l1].clean = new Date ( t_obj[2], t_obj[1], t_obj[0] );
 					}
 				}
 			}
@@ -436,12 +441,16 @@
 		/* ******************************************************************* *
 		 * 
 		 * ******************************************************************* */
-		function return_row_type(data)
+		function returnRowType(data)
 		{
 			var patt_01 = /[^0-9]/g,
 			    patt_02 = /^[0-9]+([\.,][0-9]+)?$/,
 			    patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/,
 			    patt_04 = /^[0-9]{1,2}[.-\/][0-9]{1,2}[.-\/][0-9]{4}$/;
+
+			// Given element is empy
+			if( data.length === 0 )
+				return(-1);
 
 			// Given element doesn't containt any other characters than numbers
 			if( !patt_01.test(data) )
@@ -533,7 +542,7 @@
 			if(num<0 || num>=pages)
 				return;
 
-			paging_start = parseInt(num*items_per_page);
+			paging_start = num * parseInt(items_per_page);
 			createTableBody();
 		}
 
@@ -545,7 +554,6 @@
 
 		function handleHeaderClick(e) {
 			var idx = $(this).index(),
-			    l1,
 			    pos = $.inArray(idx,sort_list);
 
 			//

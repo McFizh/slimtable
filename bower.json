@@ -1,6 +1,6 @@
 {
   "name": "slimtable",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "jQuery plugin to create sortable and pageable table.",
   "homepage": "http://slimtable.mcfish.org/",
   "license": "MIT",
@@ -14,7 +14,8 @@
     "table",
     "ajax",
     "paging",
-    "jquery"
+    "jquery",
+	"jquery-plugin"
   ],
 
   "main": [

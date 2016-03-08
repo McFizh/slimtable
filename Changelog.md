@@ -1,5 +1,9 @@
 ### Changelog
 
++ **v1.2.7** - 8.3.2016
+  - Column type detection ignores empty elements, this makes results more accurate
+  - Unit testing added for sorting text & numbers
+
 + **v1.2.6** - 7.3.2016
   - Now rows (tr in tbody) can also preserve attributes
 
