@@ -1,5 +1,9 @@
 ### Changelog
 
++ **v1.3.0** - 14.3.2016
+  - Plugin structure is rewritten to support state getter. Now you can create a method to save table state to localstorage or similar.
+  - Once again had to increase target size from 6kB to 8kB :((
+
 + **v1.2.7** - 8.3.2016
   - Column type detection ignores empty elements, this makes results more accurate
   - Unit testing added for sorting text & numbers

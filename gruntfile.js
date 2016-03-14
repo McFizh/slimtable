@@ -15,7 +15,7 @@ module.exports = function(grunt){
 			" *\n" +
 			" * Licensed under MIT license.\n" +
 			" *\n" +
-			" * @version 1.2.7\n" +
+			" * @version 1.3.0\n" +
 			" * @author Pekka Harjamäki\n" +
 			" */"
       },

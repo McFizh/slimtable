@@ -3,19 +3,30 @@
  *
  * Licensed under MIT license.
  *
- * @version 1.2.7
+ * @version 1.3.0
  * @author Pekka Harjamäki
  */
 
-(function($) {
-	$.fn.slimtable = function( options ) {
-		//
-		var settings = $.extend({
+;(function($) {
+
+  "use strict";
+
+  var SlimTable = {
+
+	/* ******************************************************************* *
+	 * Class initializer
+	 * ******************************************************************* */
+	init: function($el, options) {
+
+		$el.data("slimTableObj",this);
+
+		this.settings = $.extend({
 			tableData: null,
 			dataUrl: null,
 
 			itemsPerPage: 10,
-			ipp_list: [5,10,20],
+			ippList: [5,10,20],
+			pagingStart: 0,
 
 			keepAttrs: [],
 			sortList: [],
@@ -28,571 +39,596 @@
 			sortEndCB: null
 		}, options);
 
-		// Private variables
-		var col_settings = [],
-		    sort_list = [],
-		    tbl_data = [],
-		    table_thead,
-		    table_tbody,
-		    table_btn_container,
-		    paging_start,
-		    items_per_page,
-		    show_loading,
-		    html_cleaner_div;
+		this.state = {
+			showLoader: false,
+			cleanerDiv: $("<div></div>"),
 
-		/* ******************************************************************* *
-		 * Main part of the plugin
-		 * ******************************************************************* */
-		return this.each(function() {
+			colSettings: [],
+			tblData: [],
+			sortList: this.settings.sortList.length > 0 ? this.settings.sortList : [],
 
-			//
-			paging_start = 0;
-			show_loading = false;
-			items_per_page = parseInt(settings.itemsPerPage);
-			html_cleaner_div = document.createElement('div');
+			pagingStart: parseInt(this.settings.pagingStart),
+			itemsPerPage: parseInt(this.settings.itemsPerPage),
+			tableHeads: $el.find("thead tr th"),
+			tableBody: $el.find("tbody")
+		};
 
-			//
-			table_thead = $(this).find("thead");
-			table_tbody = $(this).find("tbody");
-
-			// First we need to find both thead and tbody
-			if(table_thead.length === 0 || table_tbody.length === 0)
-			{
-				showError("thead/tbody missing from table!");
-				return;
-			}
-
-			// Read table headers + data
-			readTable();
-
-			if( show_loading === false && !sanityCheck1() )
-			{
-				showError("Different number of columns in header and data!");
-				return;
-			}
-
-			// Add sort bindings & paging buttons
-			$(this).addClass("slimtable");
-			addSortIcons();
-			addPaging( $(this) );
-
-			//
-			doSorting();
-		} );
-
-		function sanityCheck1() 
+		// First we need to find both thead and tbody
+		if( this.state.tableHeads.length === 0 || this.state.tableBody.length === 0)
 		{
-			if( tbl_data.length > 0 && col_settings.length != tbl_data[0].data.length )
-				return(false);
-
-			return(true);
+			this.showError("thead/tbody missing from table!");
+			return;
 		}
 
-		/* ******************************************************************* *
-		 * Add paging div and sort icons
-		 * ******************************************************************* */
-		function addPaging( tbl_obj ) {
-			var t_obj1, t_obj2, l1 ,
-			    selector;
+		// Read table headers + data
+		this.parseColSettings();
+		this.readTable();
 
-			//
-			selector = $("<select></select>").
-				addClass('slimtable-paging-select').
-				on('change',handle_ipp_change);
+		if( this.state.showLoader === false && !this.sanityCheck() )
+		{
+			this.showError("Different number of columns in header and data!");
+			return;
+		}
 
-			for(l1 = 0 ; l1<settings.ipp_list.length; l1++)
+		// Add sort bindings & paging buttons
+		$el.addClass("slimtable");
+		this.addSortIcons();
+		this.addPaging( $el );
+
+		//
+		this.doSorting();
+	},
+
+	parseColSettings: function() {
+		var l1, l2, t_obj;
+
+		for(l1=0; l1<this.state.tableHeads.length; l1++)
+		{
+			this.state.colSettings[l1]={
+				sortable: true,
+				classes: [],
+				stripHtml: false,
+				sortDir: "asc",
+				rowType: -1
+			};
+
+			// has user set any custom settings to columns?
+			for(l2=0; l2<this.settings.colSettings.length; l2++)
 			{
-				t_obj1 = settings.ipp_list[l1];
-				t_obj2 = $("<option></option>").val(t_obj1).text(t_obj1);
+				t_obj = this.settings.colSettings[l2];
+				if( t_obj.colNumber != l1 )
+					continue;
 
-				if( t_obj1 == settings.itemsPerPage )
-					t_obj2.attr("selected","selected");
+				if( t_obj.enableSort === false )
+					this.settings.colSettings[l1].sortable = false;
 
-				$(selector).append(t_obj2);
+				if( t_obj.stripHtml === true )
+					this.settings.colSettings[l1].stripHtml = true;
+
+				if( t_obj.sortDir == "asc" || t_obj.sortDir == "desc" )
+					this.settings.colSettings[l1].sortDir = t_obj.sortDir;
+
+				if( t_obj.rowType >= 0 )
+					this.settings.colSettings[l1].rowType = t_obj.rowType;
+
+				if( t_obj.addClasses && t_obj.addClasses.length>0)
+					this.settings.colSettings[l1].classes = t_obj.addClasses;
+
+				break;
 			}
-	
-
-			// Create container for paging buttons
-			t_obj2 = document.createElement('div');
-			$(t_obj2).addClass('slimtable-paging-btnsdiv');
-			table_btn_container = t_obj2;
-
-			//
-			t_obj1 = $("<div></div>").
-				addClass('slimtable-paging-div').
-				append(t_obj2);
-
-			// Create container for select
-			t_obj2 = $("<div></div>").
-				addClass('slimtable-paging-seldiv').
-				append(selector).
-				append(settings.text1);
-			$(t_obj1).append(t_obj2);
-
-			// Move table to container div
-			t_obj2 = $("<div></div>").
-				addClass('slimtable-container-div').
-				append(t_obj1);
-
-			tbl_obj.before(t_obj2);
-			tbl_obj.insertBefore(t_obj1);
 		}
+	},
 
-		function addSortIcons() {
-			var t_colSettings;
+	returnRowType: function(data) {
+		var patt_01 = /[^0-9]/g,
+			patt_02 = /^[0-9]+([\.,][0-9]+)?$/,
+			patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/,
+			patt_04 = /^[0-9]{1,2}[.-\/][0-9]{1,2}[.-\/][0-9]{4}$/;
 
-			table_thead.find("th").each(function(index) {
-				$(this).attr('unselectable','on');
+		// Given element is empy
+		if( data.length === 0 )
+			return(-1);
 
-				t_colSettings = col_settings[index];
+		// Given element doesn't containt any other characters than numbers
+		if( !patt_01.test(data) )
+			return(1);
 
-				if(t_colSettings && t_colSettings.sortable)
+		// Givent element is most likely float number
+		if( patt_02.test(data) )
+			return(2);
+
+		// Float with cleanup
+		if( patt_03.test(data) )
+			return(3);
+		
+		// Date .. maybe?
+		if( patt_04.test(data) )
+			return(4);
+
+		// String comparison
+		return(0);
+	
+	},
+
+	/* ******************************************************************* *
+	 * Read data from ajax url / array / table
+	 * ******************************************************************* */
+	readTable: function() {
+		var l1, l2, matchArr, tObj, tRow, tVal, tAttr;
+
+		// Get data either from table, pre defined array or ajax url
+		if( this.settings.dataUrl && this.settings.dataUrl.length > 2 ) 
+		{
+			this.showLoader = true;
+			$.ajax({
+				url: this.settings.dataUrl,
+				dataType: "json"
+			}).done(function(data){
+				this.processData(data);
+				this.showLoader = false;
+				this.createTableBody();
+			}).fail(function(par1,par2){
+				this.showError("Ajax error: "+par2);
+				return;
+			});
+
+		} else if(this.settings.tableData && this.settings.tableData.length>=0) {
+
+			this.processData(this.settings.tableData);
+
+		} else {
+			var self = this;
+			this.state.tableBody.find("tr").each(function() {
+				tRow = { data: [], attrs: [] };
+
+				for(l1=0; l1<self.settings.keepAttrs.length; l1++)
 				{
-					var obj = document.createElement("span");
-					$(obj).attr('unselectable','on').
-						addClass("slimtable-sprites");
+					tVal = self.settings.keepAttrs[l1];
+					tAttr = $(this).attr(tVal);
 
-					if( t_colSettings.sortDir=="asc" )
-					{
-						$(obj).addClass("slimtable-sortasc");
-					} else if( t_colSettings.sortDir=="desc" ) {
-						$(obj).addClass("slimtable-sortdesc");
-					} else {
-						$(obj).addClass("slimtable-sortboth");
-					}
-
-					$(this). prepend(obj).
-						 css({ cursor: "pointer" }).
-						 on("click",handleHeaderClick);
-				} else {
-					$(this).addClass("slimtable-unsortable");
+					if ( typeof tAttr != "undefined" )
+						tRow.attrs.push({ attr: tVal, value: tAttr});
 				}
+
+				$(this).find("td").each(function() {
+					tObj = { orig: $(this).html() , attrs: [] , clean: null };
+
+					// Does td contain sort-data  attr?
+					tAttr = $(this).attr("sort-data");
+					if ( typeof tAttr != "undefined" && tAttr !== null )
+						tObj.clean = tAttr;
+
+					// Find attributes to keep
+					for(l1=0; l1<self.settings.keepAttrs.length; l1++)
+					{
+						tVal = self.settings.keepAttrs[l1];
+						tAttr = $(this).attr(tVal);
+						if ( typeof tAttr != "undefined" )
+							tObj.attrs.push({ attr: tVal, value: tAttr});
+					}
+					tRow.data.push( tObj );
+				});
+
+				self.state.tblData.push(tRow);
 			});
 		}
 
-		/* ******************************************************************* *
-		 * Utils
-		 * ******************************************************************* */
-		function processData(data)
+		//
+		if(!this.sanityCheck())
+			return;
+
+		/*********************** Determine col types ***********************/
+
+		for(l1=0; l1<this.state.tableHeads.length; l1++)
 		{
-			var l1, l2,  t_row;
+			matchArr=[ 0, 0, 0, 0, 0 ];
+
+			if(this.state.colSettings[l1].rowType == -1)
+			{
+				for(l2=0; l2<this.state.tblData.length; l2++)
+				{	
+					// Remove HTML, TRIM data and create array with cleaned & original data
+					tObj = this.state.tblData[l2].data[l1];
+		
+					if ( tObj.clean === null )
+					{
+						tObj = this.state.colSettings[l1].stripHtml ? this.state.cleanerDiv.html(tObj.orig).text() : tObj.orig;
+						tObj = $.trim(tObj).toLowerCase();
+						this.state.tblData[l2].data[l1].clean = tObj;
+					} else {
+						tObj = tObj.clean;
+					}
+
+					tAttr = this.returnRowType( tObj );
+					if(tAttr > 0)
+					  matchArr[ tAttr ]++;
+				}
+
+				this.state.colSettings[l1].rowType = $.inArray( Math.max.apply(this, matchArr) , matchArr );
+			}
+
+			// Cleanup data bases on type
+			for(l2=0; l2<this.state.tblData.length; l2++)
+			{
+				tAttr = this.state.colSettings[l1].rowType;
+				tObj = this.state.tblData[l2].data[l1].clean;
+
+				if ( tAttr === 0 )
+					this.state.tblData[l2].data[l1].clean = String(tObj);
+
+				// Remove end sign, change , to . and run parsefloat
+				if ( tAttr == 2 || tAttr == 3 )
+					this.state.tblData[l2].data[l1].clean = parseFloat(tObj.replace(",","."));
+
+				// Convert values to dates
+				if ( tAttr == 4 )
+				{
+					tObj = tObj.split(/[.\/-]/);
+					this.state.tblData[l2].data[l1].clean = new Date ( tObj[2], tObj[1], tObj[0] );
+				}
+			}
+		}
+
+	},
+
+	processData: function(data) {
+			var l1, l2,  tRow;
       
-			tbl_data = [];
+			this.state.tblData = [];
 
 			for(l1=0; l1<data.length; l1++)
 			{
-				t_row = { data: [] , attrs: [] };
+				tRow = { data: [] , attrs: [] };
 				for(l2=0; l2<data[l1].length; l2++)
-					t_row.data.push( { orig: data[l1][l2], attrs: [], clean: null } );
-				tbl_data.push(t_row);
+					tRow.data.push( { orig: data[l1][l2], attrs: [], clean: null } );
+				this.state.tblData.push(tRow);
 			}
-		}
+	},
 
-		function readTable() 
+	/* ******************************************************************* *
+	 * Create table body / header
+	 * ******************************************************************* */
+	createTableHead: function() {
+		var l1, t_item1, t_item2;
+
+		for(l1=0; l1<this.state.tableHeads.length; l1++)
 		{
-			var th_list=table_thead.find("th"), 
-				l1, l2, t_val, 
-				t_row, t_obj, t_attr, match_arr;
+			if( !this.state.colSettings[l1] || !this.state.colSettings[l1].sortable )
+				continue;
 
-			//
-			col_settings = [];
-			for(l1=0; l1<th_list.length; l1++)
+			t_item1 = $(this.state.tableHeads[l1]);
+			t_item2 = t_item1.find("span");
+
+			if( $.inArray(l1,this.state.sortList) < 0 )
 			{
-				col_settings[l1]={
-					sortable: true,
-					classes: [],
-					stripHtml: false,
-					sortDir: "asc",
-					rowType: -1
-				};
-
-				// has user set any custom settings to columns?
-				for(l2=0; l2<settings.colSettings.length; l2++)
-				{
-					t_obj = settings.colSettings[l2];
-					if( t_obj.colNumber != l1 )
-						continue;
-
-					if( t_obj.enableSort === false )
-						col_settings[l1].sortable = false;
-
-					if( t_obj.stripHtml === true )
-						col_settings[l1].stripHtml = true;
-
-					if( t_obj.sortDir == "asc" || t_obj.sortDir == "desc" )
-						col_settings[l1].sortDir = t_obj.sortDir;
-
-					if( t_obj.rowType >= 0 )
-						col_settings[l1].rowType = t_obj.rowType;
-
-					if( t_obj.addClasses && t_obj.addClasses.length>0)
-						col_settings[l1].classes = t_obj.addClasses;
-
-					break;
-				}
-			}
-
-			//
-			sort_list = ( settings.sortList.length > 0 ) ? settings.sortList : [];
-
-			// Get data either from table, pre defined array or ajax url
-			if( settings.dataUrl && settings.dataUrl.length > 2 ) 
-			{
-				show_loading = true;
-				$.ajax({
-					url: settings.dataUrl,
-					dataType: "json"
-				}).done(function(data){
-					processData(data);
-					show_loading = false;
-					createTableBody();
-				}).fail(function(par1,par2){
-					showError("Ajax error: "+par2);
-					return;
-				});
-
-			} else if(settings.tableData && settings.tableData.length>=0) {
-
-				processData(settings.tableData);
-
+				t_item1.removeClass("slimtable-activeth");
+				t_item2.removeClass("slimtable-sortasc").
+					removeClass("slimtable-sortdesc").
+					addClass("slimtable-sortboth");
 			} else {
-				table_tbody.find("tr").each(function() {
-					t_row = { data: [], attrs: [] };
-
-					for(l1=0; l1<settings.keepAttrs.length; l1++)
-					{
-						t_val = settings.keepAttrs[l1];
-						t_attr = $(this).attr(t_val);
-						if ( typeof t_attr != "undefined" )
-							t_row.attrs.push({ attr: t_val, value: t_attr});
-					}
-
-					$(this).find("td").each(function() {
-						t_obj = { orig: $(this).html() , attrs: [] , clean: null };
-
-						// Does td contain sort-data  attr?
-						t_attr = $(this).attr("sort-data");
-						if ( typeof t_attr != "undefined" && t_attr !== null )
-							t_obj.clean = t_attr;
-
-						// Find attributes to keep
-						for(l1=0; l1<settings.keepAttrs.length; l1++)
-						{
-							t_val = settings.keepAttrs[l1];
-							t_attr = $(this).attr(t_val);
-							if ( typeof t_attr != "undefined" )
-								t_obj.attrs.push({ attr: t_val, value: t_attr});
-						}
-						t_row.data.push( t_obj );
-					});
-
-					tbl_data.push(t_row);
-				});
+				t_item1.addClass("slimtable-activeth");
+				t_item2.removeClass("slimtable-sortboth").
+					removeClass("slimtable-sort" + (this.state.colSettings[l1].sortDir=="asc"?"desc":"asc") ).
+					addClass("slimtable-sort" + this.state.colSettings[l1].sortDir );
 			}
 
-			//
-			if(!sanityCheck1())
-				return;
+		}
+	},
 
-			/*********************** Determine col types ***********************/
- 
-			for(l1=0; l1<th_list.length; l1++)
+	createTableBody: function() {
+		var end_pos = this.state.pagingStart + this.state.itemsPerPage,
+			t_cobj, t_obj1, t_obj2,
+			pages = Math.ceil( this.state.tblData.length / this.state.itemsPerPage ), 
+			l1, l2, l3;
+
+		//
+		this.state.tableBody.empty();
+		end_pos = end_pos > this.state.tblData.length ? this.state.tblData.length : end_pos;
+
+		//
+		for(l1=this.state.pagingStart; l1<end_pos; l1++)
+		{
+			t_obj1 = $("<tr></tr>");
+
+			// Restore attributes to TR
+			for(l3=0; l3<this.state.tblData[l1].attrs.length; l3++)
+				$(t_obj1).attr(this.state.tblData[l1].attrs[l3].attr, this.state.tblData[l1].attrs[l3].value);
+
+			// Create TD elements
+			for(l2=0; l2<this.state.tblData[l1].data.length; l2++)
 			{
-				match_arr=[ 0, 0, 0, 0, 0 ];
+				t_cobj = this.state.tblData[l1].data[l2];
 
-				if(col_settings[l1].rowType == -1)
-				{
-					for(l2=0; l2<tbl_data.length; l2++)
-					{	
-						// Remove HTML, TRIM data and create array with cleaned & original data
-						t_obj = tbl_data[l2].data[l1];
-            
-						if ( t_obj.clean === null )
-						{
-							t_obj = col_settings[l1].stripHtml ? $(html_cleaner_div).html(t_obj.orig).text() : t_obj.orig;
-							t_obj = $.trim(t_obj).toLowerCase();
-							tbl_data[l2].data[l1].clean = t_obj;
-						} else {
-							t_obj = t_obj.clean;
-						}
+				// Create TD element
+				t_obj2 = $("<td></td>").html(t_cobj.orig);
 
-						t_attr = returnRowType( t_obj );
-						if(t_attr > 0)
-						  match_arr[ t_attr ]++;
-					}
+				// Restore attributes
+				for(l3=0; l3<t_cobj.attrs.length; l3++)
+					$(t_obj2).attr(t_cobj.attrs[l3].attr, t_cobj.attrs[l3].value);
 
-					col_settings[l1].rowType = $.inArray( Math.max.apply(this, match_arr) , match_arr );
-				}
+				// Add extra css classes to td
+				for(l3=0; l3<this.state.colSettings[l2].classes.length; l3++)
+					$(t_obj2).addClass(this.state.colSettings[l2].classes[l3]);
 
-				// Cleanup data bases on type
-				for(l2=0; l2<tbl_data.length; l2++)
-				{
-					t_attr = col_settings[l1].rowType;
-					t_obj = tbl_data[l2].data[l1].clean;
-
-					if ( t_attr === 0 )
-					{
-						tbl_data[l2].data[l1].clean = String(t_obj);
-					}
-
-					// Remove end sign, change , to . and run parsefloat
-					if ( t_attr == 2 || t_attr == 3 )
-					{
-						tbl_data[l2].data[l1].clean = parseFloat(t_obj.replace(",","."));
-					}
-
-					// Convert values to dates
-					if ( t_attr == 4 )
-					{
-						t_obj = t_obj.split(/[.\/-]/);
-						tbl_data[l2].data[l1].clean = new Date ( t_obj[2], t_obj[1], t_obj[0] );
-					}
-				}
+				// Add td to tr
+				$(t_obj1).append(t_obj2);
 			}
+
+			this.state.tableBody.append(t_obj1);
 		}
 
-		/* ******************************************************************* *
-		 * 
-		 * ******************************************************************* */
-		function createTableBody() {
-			var end_pos = paging_start+items_per_page,
-			    t_cobj, t_obj1, t_obj2,
-			    pages = Math.ceil( tbl_data.length / items_per_page ), 
-			    l1, l2, l3;
+		// Create paging buttons
+		$(this.state.btnContainer).empty();
+		for(l1=0; l1<pages; l1++)
+		{
+			t_obj1 = document.createElement("div");
+			$(t_obj1).addClass("slimtable-page-btn").
+				  on('click',{self: this},this.handlePageChange).
+				  text(l1+1);
 
-			//
-			table_tbody.empty();
-			end_pos = end_pos > tbl_data.length ? tbl_data.length : end_pos;
+			if( l1*this.state.itemsPerPage == this.state.pagingStart )
+				$(t_obj1).addClass("active");
+				
+			$(this.state.btnContainer).append( t_obj1 );
+		}
+	},
 
-			//
-			for(l1=paging_start; l1<end_pos; l1++)
+	/* ******************************************************************* *
+	 * Add sorting icons / buttons
+	 * ******************************************************************* */
+	addSortIcons: function() {
+		var tCfg, 
+			self = this;
+
+		this.state.tableHeads.each(function(index) {
+			$(this).attr('unselectable','on');
+
+			tCfg = self.state.colSettings[index];
+
+			if(tCfg && tCfg.sortable)
 			{
-				t_obj1 = $("<tr></tr>");
+				var tObj = $("<span></span>").
+							attr('unselectable','on').
+							addClass("slimtable-sprites");
 
-				// Restore attributes to TR
-				for(l3=0; l3<tbl_data[l1].attrs.length; l3++)
-					$(t_obj1).attr(tbl_data[l1].attrs[l3].attr, tbl_data[l1].attrs[l3].value);
-
-				// Create TD elements
-				for(l2=0; l2<tbl_data[l1].data.length; l2++)
+				if( tCfg.sortDir=="asc" )
 				{
-					t_cobj = tbl_data[l1].data[l2];
-
-					// Create TD element
-					t_obj2 = $("<td></td>").html(t_cobj.orig);
-
-					// Restore attributes
-					for(l3=0; l3<t_cobj.attrs.length; l3++)
-						$(t_obj2).attr(t_cobj.attrs[l3].attr, t_cobj.attrs[l3].value);
-
-					// Add extra css classes to td
-					for(l3=0; l3<col_settings[l2].classes.length; l3++)
-						$(t_obj2).addClass(col_settings[l2].classes[l3]);
-
-					// Add td to tr
-					$(t_obj1).append(t_obj2);
+					tObj.addClass("slimtable-sortasc");
+				} else if( tCfg.sortDir=="desc" ) {
+					tObj.addClass("slimtable-sortdesc");
+				} else {
+					tObj.addClass("slimtable-sortboth");
 				}
 
-				table_tbody.append(t_obj1);
+				$(this).
+					prepend(tObj).
+					css({ cursor: "pointer" }).
+					on("click",{ self: self},self.handleHeaderClick);
+			} else {
+				$(this).addClass("slimtable-unsortable");
 			}
+		});
+	},
 
-			// Create paging buttons
-			$(table_btn_container).empty();
-			for(l1=0; l1<pages; l1++)
-			{
-				t_obj1 = document.createElement("div");
-				$(t_obj1).addClass("slimtable-page-btn").
-					  on('click',handle_page_change).
-					  text(l1+1);
+	addPaging: function( tblObj ) {
+		var tObj1, tObj2, l1 , selector;
 
-				if( l1*items_per_page == paging_start )
-					$(t_obj1).addClass("active");
-					
-				$(table_btn_container).append( t_obj1 );
-			}
+		//
+		selector = $("<select></select>").
+			addClass('slimtable-paging-select').
+			on('change',{self: this},this.handleIppChange);
+
+		for(l1 = 0; l1<this.settings.ippList.length; l1++)
+		{
+			tObj1 = this.settings.ippList[l1];
+			tObj2 = $("<option></option>").val(tObj1).text(tObj1);
+
+			if( tObj1 == this.settings.itemsPerPage )
+				tObj2.attr("selected","selected");
+
+			$(selector).append(tObj2);
 		}
 
-		function createTableHead() {
-			var l1, t_item1, t_item2;
+		// Create container for paging buttons
+		tObj2 = $("<div></div>").
+				addClass('slimtable-paging-btnsdiv');
+		this.state.btnContainer = tObj2;
 
-			for(l1=0; l1<col_settings.length; l1++)
+		//
+		tObj1 = $("<div></div>").
+			addClass('slimtable-paging-div').
+			append(tObj2);
+
+		// Create container for select
+		tObj2 = $("<div></div>").
+			addClass('slimtable-paging-seldiv').
+			append(selector).
+			append(this.settings.text1);
+		$(tObj1).append(tObj2);
+
+		// Move table to container div
+		tObj2 = $("<div></div>").
+			addClass('slimtable-container-div').
+			append(tObj1);
+
+		tblObj.before(tObj2);
+		tblObj.insertBefore(tObj1);
+	},
+
+	/* ******************************************************************* *
+	 * Data sorting method
+	 * ******************************************************************* */
+	doSorting: function() {
+		var self = this;
+
+		//
+		if(this.state.sortList.length>0)
+
+		this.state.tblData.sort(function(a,b) {
+			var t1, ta, tb, l1,
+				slistLength=self.state.sortList.length,
+				same_item;
+
+			for(l1=0; l1<slistLength; l1++)
 			{
-				if( !col_settings[l1] || !col_settings[l1].sortable )
+				t1 = self.state.sortList[l1];
+
+				// Swap variables, if sortdir = ascending
+				if( self.state.colSettings[t1].sortDir == 'desc' )
+				{
+					ta = b.data[t1].clean; 
+					tb = a.data[t1].clean;
+				} else {
+					ta = a.data[t1].clean; 
+					tb = b.data[t1].clean;
+				}
+
+				// Given variables match, move to next sort parameter
+				same_item = false;
+				if ( self.state.colSettings[t1].rowType === 0 )
+				{
+					if ( ta.localeCompare(tb) === 0 )
+						same_item = true;
+				} else if (self.state.colSettings[t1].rowType == 4 ) {
+					if ( ta - tb === 0 )
+						same_item = true;
+				} else { 
+					if (ta == tb)
+						same_item = true;
+				}
+
+				//
+				if( same_item && l1 < (slistLength-1) )
 					continue;
 
-				t_item1 = table_thead.find("th:nth-child("+(l1+1)+")");
-				t_item2 = t_item1.find("span");
-
-				if( $.inArray(l1,sort_list) < 0 )
-				{
-					t_item1.removeClass("slimtable-activeth");
-					t_item2.removeClass("slimtable-sortasc").
-						removeClass("slimtable-sortdesc").
-						addClass("slimtable-sortboth");
-				} else {
-					t_item1.addClass("slimtable-activeth");
-					t_item2.removeClass("slimtable-sortboth").
-						removeClass("slimtable-sort" + (col_settings[l1].sortDir=="asc"?"desc":"asc") ).
-						addClass("slimtable-sort" + col_settings[l1].sortDir );
-				}
+				// Compare values
+				if ( self.state.colSettings[t1].rowType === 0 )
+					return( ta.localeCompare(tb) );
+				else
+					return( ta - tb );
 			}
-		}
 
-		/* ******************************************************************* *
-		 * 
-		 * ******************************************************************* */
-		function returnRowType(data)
+		});
+
+		//
+		this.createTableHead();
+		this.createTableBody();
+	},
+
+	/* ******************************************************************* *
+	 * Event handlers
+	 * ******************************************************************* */
+	handleHeaderClick: function(event) {
+		var idx = $(this).index(),
+			self = event.data.self,
+			pos = $.inArray(idx,self.state.sortList);
+
+		//
+		event.preventDefault();
+
+		// Execute sort start callback, if one is defined
+		if(self.settings.sortStartCB && typeof self.settings.sortStartCB == 'function')
+			self.settings.sortStartCB.call(self);
+
+		// Shift click
+		if( event.shiftKey )
 		{
-			var patt_01 = /[^0-9]/g,
-			    patt_02 = /^[0-9]+([\.,][0-9]+)?$/,
-			    patt_03 = /^([0-9]+([\.,][0-9]+)?)\s*[%$€£e]?$/,
-			    patt_04 = /^[0-9]{1,2}[.-\/][0-9]{1,2}[.-\/][0-9]{4}$/;
-
-			// Given element is empy
-			if( data.length === 0 )
-				return(-1);
-
-			// Given element doesn't containt any other characters than numbers
-			if( !patt_01.test(data) )
-				return(1);
-
-			// Givent element is most likely float number
-			if( patt_02.test(data) )
-				return(2);
-
-			// Float with cleanup
-			if( patt_03.test(data) )
-				return(3);
-			
-			// Date .. maybe?
-			if( patt_04.test(data) )
-				return(4);
-
-			// String comparison
-			return(0);
-		
-		}
-
-		function doSorting()
-		{
-			//
-			if(sort_list.length>0)
-			tbl_data.sort(function(a,b) {
-				var t1, ta, tb, l1,
-				    slist_length=sort_list.length,
-				    same_item;
-
-				for(l1=0; l1<slist_length; l1++)
-				{
-					t1 = sort_list[l1];
-
-					// Swap variables, if sortdir = ascending
-					if( col_settings[t1].sortDir == 'desc' )
-					{
-						ta = b.data[t1].clean; 
-						tb = a.data[t1].clean;
-					} else {
-						ta = a.data[t1].clean; 
-						tb = b.data[t1].clean;
-					}
-
-					// Given variables match, move to next sort parameter
-					same_item = false;
-					if ( col_settings[t1].rowType === 0 )
-					{
-						if ( ta.localeCompare(tb) === 0 )
-							same_item = true;
-					} else if (col_settings[t1].rowType == 4 ) {
-						if ( ta - tb === 0 )
-							same_item = true;
-					} else { 
-						if (ta == tb)
-							same_item = true;
-					}
-
-					//
-					if( same_item && l1 < (slist_length-1) )
-						continue;
-
-					// Compare values
-					if ( col_settings[t1].rowType === 0 )
-						return( ta.localeCompare(tb) );
-					else
-						return( ta - tb );
-				}
-
-			});
-
-			//
-			createTableHead();
-			createTableBody();
-		}
-
-		function showError(msg) {
-			console.log("Slimtable: "+msg);
-		}
-
-		/* ******************************************************************* *
-		 * Events
-		 * ******************************************************************* */
-		function handle_page_change(e) {
-			var num = parseInt($(this).text())-1,
-			    pages = Math.ceil( tbl_data.length / items_per_page );
-
-			if(num<0 || num>=pages)
-				return;
-
-			paging_start = num * parseInt(items_per_page);
-			createTableBody();
-		}
-
-		function handle_ipp_change(e) {
-			items_per_page = parseInt(this.value);
-			paging_start = 0;
-			createTableBody();
-		}
-
-		function handleHeaderClick(e) {
-			var idx = $(this).index(),
-			    pos = $.inArray(idx,sort_list);
-
-			//
-			e.preventDefault();
-
-			// Execute sort start callback, if one is defined
-			if(settings.sortStartCB && typeof settings.sortStartCB == 'function')
-				settings.sortStartCB.call(this);
-
-			// Shift click
-			if( e.shiftKey )
+			if( pos < 0 )
 			{
-				if( pos < 0 )
-				{
-					sort_list.push( idx );
-					col_settings[idx].sortDir = "asc";
-				} else {
-					if(col_settings[idx].sortDir=="asc")	col_settings[idx].sortDir = "desc";
-					else					col_settings[idx].sortDir = "asc";
-				}
+				self.state.sortList.push( idx );
+				self.state.colSettings[idx].sortDir = "asc";
 			} else {
-				sort_list = [ idx ];
-				if( pos < 0 )
-				{
-					col_settings[idx].sortDir = "asc";
-				} else {
-					if(col_settings[idx].sortDir=="asc")	col_settings[idx].sortDir = "desc";
-					else					col_settings[idx].sortDir = "asc";
-				}
+				if(self.state.colSettings[idx].sortDir=="asc")	
+					self.state.colSettings[idx].sortDir = "desc";
+				else
+					self.state.colSettings[idx].sortDir = "asc";
 			}
 
-
-			//
-			doSorting();
-
-			// Execute sort end callback, if one is defined
-			if(settings.sortEndCB && typeof settings.sortEndCB == 'function')
-				settings.sortEndCB.call(this);
+		} else {
+			self.state.sortList = [ idx ];
+			if( pos < 0 )
+			{
+				self.state.colSettings[idx].sortDir = "asc";
+			} else {
+				if(self.state.colSettings[idx].sortDir=="asc")	
+					self.state.colSettings[idx].sortDir = "desc";
+				else
+					self.state.colSettings[idx].sortDir = "asc";
+			}
 		}
 
-	};
+
+		//
+		self.doSorting();
+
+		// Execute sort end callback, if one is defined
+		if(self.settings.sortEndCB && typeof self.settings.sortEndCB == 'function')
+			self.settings.sortEndCB.call(self);
+	},
+
+	handleIppChange: function(e) {
+		var self = e.data.self;
+		self.state.itemsPerPage = parseInt(this.value);
+		self.state.pagingStart = 0;
+		self.createTableBody();
+	},
+
+	handlePageChange: function(event) {
+		var num = parseInt($(this).text())-1,
+			self = event.data.self,
+			pages = Math.ceil( self.state.tblData.length / self.state.itemsPerPage );
+
+		if(num<0 || num>=pages)
+			return;
+
+		self.state.pagingStart = num * self.state.itemsPerPage;
+		self.createTableBody();
+	},
+
+	/* ******************************************************************* *
+	 * Structure checker & error method
+	 * ******************************************************************* */
+	sanityCheck: function()	{
+		return !( 
+			this.state.tblData.length > 0 && 
+			this.state.colSettings.length != this.state.tblData[0].data.length 
+		);
+	},
+
+	showError: function(msg) {
+		console.log("Slimtable: "+msg);
+	},
+
+	/* ******************************************************************* *
+	 * Status getters
+	 * ******************************************************************* */
+	getState: function($el) {
+		var slimObj = $el.data("slimTableObj");
+
+		if(slimObj && slimObj.state)
+			return {
+				itemsPerPage: slimObj.state.itemsPerPage,
+				pagingStart: slimObj.state.pagingStart,
+				colSettings: slimObj.state.colSettings,
+				sortList: slimObj.state.sortList
+			};
+		
+		return {};
+	}
+
+  };
+
+  /* ******************************************************************* *
+   * Plugin main
+   * ******************************************************************* */
+  $.fn.slimtable = function(options) {
+	if( typeof(options) != "undefined" && options === "getState" )
+		return SlimTable.getState( $(this[0]) );
+
+	return this.each(function(){
+		var tbl = Object.create(SlimTable);
+		tbl.init( $(this) , options);
+	});
+  };
+
 }(jQuery));

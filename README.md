@@ -3,7 +3,7 @@ SlimTable
 
 [![Build Status](https://travis-ci.org/McFizh/slimtable.svg?branch=master)](https://travis-ci.org/McFizh/slimtable)
 
-SlimTable is a plugin for jQuery, which creates sortable and pageable tables from existing table data. Plugin is quite lightweight, as it only takes 6kB when minified (3kB gzipped). 
+SlimTable is a plugin for jQuery, which creates sortable and pageable tables from existing table data. Plugin is quite lightweight, as it only takes 8kB when minified (3kB gzipped). 
 
 Official homepage of slimtable: [http://slimtable.mcfish.org](http://slimtable.mcfish.org)
 
