@@ -1,5 +1,8 @@
 ### Changelog
 
++ **v1.3.1** - 15.3.2016
+  - Fixed setting "colsettings" bug in init. Also added test for this
+
 + **v1.3.0** - 14.3.2016
   - Plugin structure is rewritten to support state getter. Now you can create a method to save table state to localstorage or similar.
   - Once again had to increase target size from 6kB to 8kB :((

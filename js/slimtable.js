@@ -3,7 +3,7 @@
  *
  * Licensed under MIT license.
  *
- * @version 1.3.0
+ * @version 1.3.1
  * @author Pekka Harjamäki
  */
 
@@ -85,11 +85,12 @@
 		for(l1=0; l1<this.state.tableHeads.length; l1++)
 		{
 			this.state.colSettings[l1]={
-				sortable: true,
+				enableSort: true,
 				classes: [],
 				stripHtml: false,
 				sortDir: "asc",
-				rowType: -1
+				rowType: -1,
+				colNumber: l1
 			};
 
 			// has user set any custom settings to columns?
@@ -100,19 +101,19 @@
 					continue;
 
 				if( t_obj.enableSort === false )
-					this.settings.colSettings[l1].sortable = false;
+					this.state.colSettings[l1].enableSort = false;
 
 				if( t_obj.stripHtml === true )
-					this.settings.colSettings[l1].stripHtml = true;
+					this.state.colSettings[l1].stripHtml = true;
 
 				if( t_obj.sortDir == "asc" || t_obj.sortDir == "desc" )
-					this.settings.colSettings[l1].sortDir = t_obj.sortDir;
+					this.state.colSettings[l1].sortDir = t_obj.sortDir;
 
 				if( t_obj.rowType >= 0 )
-					this.settings.colSettings[l1].rowType = t_obj.rowType;
+					this.state.colSettings[l1].rowType = t_obj.rowType;
 
 				if( t_obj.addClasses && t_obj.addClasses.length>0)
-					this.settings.colSettings[l1].classes = t_obj.addClasses;
+					this.state.colSettings[l1].classes = t_obj.addClasses;
 
 				break;
 			}
@@ -293,7 +294,7 @@
 
 		for(l1=0; l1<this.state.tableHeads.length; l1++)
 		{
-			if( !this.state.colSettings[l1] || !this.state.colSettings[l1].sortable )
+			if( !this.state.colSettings[l1] || !this.state.colSettings[l1].enableSort )
 				continue;
 
 			t_item1 = $(this.state.tableHeads[l1]);
@@ -385,7 +386,7 @@
 
 			tCfg = self.state.colSettings[index];
 
-			if(tCfg && tCfg.sortable)
+			if(tCfg && tCfg.enableSort)
 			{
 				var tObj = $("<span></span>").
 							attr('unselectable','on').
@@ -603,15 +604,19 @@
 	 * Status getters
 	 * ******************************************************************* */
 	getState: function($el) {
-		var slimObj = $el.data("slimTableObj");
+		var slimObj = $el.data("slimTableObj"), state;
 
 		if(slimObj && slimObj.state)
-			return {
-				itemsPerPage: slimObj.state.itemsPerPage,
-				pagingStart: slimObj.state.pagingStart,
-				colSettings: slimObj.state.colSettings,
-				sortList: slimObj.state.sortList
+		{
+			state = slimObj.state;
+				return {
+				colNumber: state.colNumber,
+				itemsPerPage: state.itemsPerPage,
+				pagingStart: state.pagingStart,
+				colSettings: state.colSettings,
+				sortList: state.sortList
 			};
+    	}
 		
 		return {};
 	}
