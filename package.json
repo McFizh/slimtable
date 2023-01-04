@@ -18,6 +18,12 @@
     "type": "git",
     "url": "https://github.com/McFizh/slimtable.git"
   },
+  "scripts": {
+    "test:lint": "eslint src/slimtable.js",
+    "test:qunit": "grunt test",
+    "test": "npm run test:lint && npm run test:qunit",
+    "demoserver": "http-server ./examples"
+  },
   "devDependencies": {
     "eslint": "^8.28.0",
     "grunt": "^1.5.3",
