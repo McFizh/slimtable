@@ -1,56 +1,55 @@
-module.exports = function(grunt){
+module.exports = function (grunt) {
   "use strict";
 
   // ----------------------------------------------------
   grunt.initConfig({
+    pkg: grunt.file.readJSON("package.json"),
+
     clean: {
-      dist: ["dist"]
+      dist: ["dist"],
     },
 
     uglify: {
       options: {
         preserveComments: false,
-		banner: "/*!\n" +
-			" * slimtable ( http://slimtable.mcfish.org/ )\n" +
-			" *\n" +
-			" * Licensed under MIT license.\n" +
-			" *\n" +
-			" * @version 1.3.1\n" +
-			" * @author Pekka Harjamäki\n" +
-			" */"
+        banner:
+          "/*!\n" +
+          " * slimtable ( https://slimtable.mcfish.org/ )\n" +
+          " *\n" +
+          " * Licensed under MIT license.\n" +
+          " *\n" +
+          " * @version <%= pkg.version %>\n" +
+          " * @author Pekka Harjamäki\n" +
+          " */",
       },
       main: {
-        src: "js/slimtable.js",
-        dest: "dist/js/slimtable.min.js"
-      }
+        src: "src/slimtable.js",
+        dest: "dist/js/slimtable.min.js",
+      },
     },
 
     copy: {
       css: {
         expand: true,
+        cwd: "src/",
         src: "css/*",
         dest: "dist/",
-        filter: "isFile"
-      }
+        filter: "isFile",
+      },
     },
 
-	jshint: {
-		all: [ "gruntfile.js", "js/slimtable.js" ]
-	},
-
-	qunit: {
-		all: [ "tests/*.html" ]
-	}
+    qunit: {
+      all: ["tests/*.html"],
+    },
   });
 
   // ----------------------------------------------------
-  grunt.loadNpmTasks( "grunt-contrib-clean" );
-  grunt.loadNpmTasks( "grunt-contrib-uglify" );
-  grunt.loadNpmTasks( "grunt-contrib-copy" );
-  grunt.loadNpmTasks( "grunt-contrib-qunit" );
-  grunt.loadNpmTasks( "grunt-contrib-jshint" );
+  grunt.loadNpmTasks("grunt-contrib-clean");
+  grunt.loadNpmTasks("grunt-contrib-uglify");
+  grunt.loadNpmTasks("grunt-contrib-copy");
+  grunt.loadNpmTasks("grunt-contrib-qunit");
 
   // ----------------------------------------------------
-  grunt.registerTask( "default", [ "clean:dist", "uglify:main", "copy:css" ] );
-  grunt.registerTask( "test", [ "jshint:all", "qunit:all" ] );
+  grunt.registerTask("default", ["clean:dist", "uglify:main", "copy:css"]);
+  grunt.registerTask("test", ["qunit:all"]);
 };
