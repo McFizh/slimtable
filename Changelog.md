@@ -1,12 +1,14 @@
 ### Changelog
 
-- **v2.0.0** - xx.xx.2023
+- **v2.0.0** - 2.8.2024
 
   - Refactored folder structure
-  - Added support for jquery3 and removed support for jquery 1 & 2
+  - Added support for jquery 3 and removed support for versions 1 & 2
   - Updated packages + build tools
   - Removed bower
   - Replaced travis with github actions
+  - Updated qunit from 1 to 2
+  - Partial code clean (vars to let/const)
 
 - **v1.3.1** - 15.3.2016
 

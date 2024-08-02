@@ -39,7 +39,12 @@ module.exports = function (grunt) {
     },
 
     qunit: {
-      all: ["tests/*.html"],
+      options: {
+        puppeteer: {
+          args: [ "--disable-web-security" ]
+        }
+      },
+      all: ["tests/*.html"]
     },
   });
 

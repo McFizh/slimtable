@@ -54,8 +54,7 @@
       };
 
       // First we need to find both thead and tbody
-      if( this.state.tableHeads.length === 0 || this.state.tableBody.length === 0)
-      {
+      if( this.state.tableHeads.length === 0 || this.state.tableBody.length === 0) {
         this.showError("thead/tbody missing from table!");
         return;
       }
@@ -64,8 +63,7 @@
       this.parseColSettings();
       this.readTable();
 
-      if( this.state.showLoader === false && !this.sanityCheck() )
-      {
+      if( this.state.showLoader === false && !this.sanityCheck() ) {
         this.showError("Different number of columns in header and data!");
         return;
       }
@@ -80,10 +78,7 @@
     },
 
     parseColSettings: function() {
-      var l1, l2, t_obj;
-
-      for(l1=0; l1<this.state.tableHeads.length; l1++)
-      {
+      for(let l1=0; l1<this.state.tableHeads.length; l1++) {
         this.state.colSettings[l1]={
           enableSort: true,
           classes: [],
@@ -94,9 +89,7 @@
         };
 
         // has user set any custom settings to columns?
-        for(l2=0; l2<this.settings.colSettings.length; l2++)
-        {
-          t_obj = this.settings.colSettings[l2];
+        for(const t_obj of this.settings.colSettings) {
           if( t_obj.colNumber !== l1 )
             continue;
 
@@ -155,7 +148,7 @@
 	 * Read data from ajax url / array / table
 	 * ******************************************************************* */
     readTable: function() {
-      var l1, l2, matchArr, tObj, tRow, tVal, tAttr;
+      var l1, l2, matchArr, tObj, tRow, tAttr;
 
       // Get data either from table, pre defined array or ajax url
       if( this.settings.dataUrl && this.settings.dataUrl.length > 2 )
@@ -178,15 +171,12 @@
         this.processData(this.settings.tableData);
 
       } else {
-        var self = this;
+        const self = this;
         this.state.tableBody.find("tr").each(function() {
           tRow = { data: [], attrs: [] };
 
-          for(l1=0; l1<self.settings.keepAttrs.length; l1++)
-          {
-            tVal = self.settings.keepAttrs[l1];
+          for(const tVal of self.settings.keepAttrs) {
             tAttr = $(this).attr(tVal);
-
             if ( typeof tAttr !== "undefined" )
               tRow.attrs.push({ attr: tVal, value: tAttr});
           }
@@ -200,9 +190,7 @@
               tObj.clean = tAttr;
 
             // Find attributes to keep
-            for(l1=0; l1<self.settings.keepAttrs.length; l1++)
-            {
-              tVal = self.settings.keepAttrs[l1];
+            for(const tVal of self.settings.keepAttrs) {
               tAttr = $(this).attr(tVal);
               if ( typeof tAttr !== "undefined" )
                 tObj.attrs.push({ attr: tVal, value: tAttr});
@@ -220,8 +208,7 @@
 
       /*********************** Determine col types ***********************/
 
-      for(l1=0; l1<this.state.tableHeads.length; l1++)
-      {
+      for(l1=0; l1<this.state.tableHeads.length; l1++) {
         matchArr=[ 0, 0, 0, 0, 0 ];
 
         if(this.state.colSettings[l1].rowType === -1)
@@ -378,13 +365,12 @@
 	 * Add sorting icons / buttons
 	 * ******************************************************************* */
     addSortIcons: function() {
-      var tCfg,
-        self = this;
+      const self = this;
 
       this.state.tableHeads.each(function(index) {
         $(this).attr("unselectable","on");
 
-        tCfg = self.state.colSettings[index];
+        let tCfg = self.state.colSettings[index];
 
         if(tCfg && tCfg.enableSort)
         {
@@ -412,16 +398,14 @@
     },
 
     addPaging: function( tblObj ) {
-      var tObj1, tObj2, l1 , selector;
+      let tObj1, tObj2, selector;
 
       //
       selector = $("<select></select>").
         addClass("slimtable-paging-select").
         on("change",{self: this},this.handleIppChange);
 
-      for(l1 = 0; l1<this.settings.ippList.length; l1++)
-      {
-        tObj1 = this.settings.ippList[l1];
+      for(const tObj1 of this.settings.ippList) {
         tObj2 = $("<option></option>").val(tObj1).text(tObj1);
 
         if( tObj1 === this.settings.itemsPerPage )
@@ -460,7 +444,7 @@
 	 * Data sorting method
 	 * ******************************************************************* */
     doSorting: function() {
-      var self = this;
+      const self = this;
 
       //
       if(this.state.sortList.length>0)
@@ -519,20 +503,20 @@
     /* ******************************************************************* *
 	 * Event handlers
 	 * ******************************************************************* */
-    handleHeaderClick: function(event) {
-      var idx = $(this).index(),
-        self = event.data.self,
-        pos = $.inArray(idx,self.state.sortList);
+    handleHeaderClick: function(e) {
+      const self = e.data.self;
+      const idx = $(this).index();
+      const pos = $.inArray(idx,self.state.sortList);
 
       //
-      event.preventDefault();
+      e.preventDefault();
 
       // Execute sort start callback, if one is defined
       if(self.settings.sortStartCB && typeof self.settings.sortStartCB === "function")
         self.settings.sortStartCB.call(self);
 
       // Shift click
-      if( event.shiftKey )
+      if( e.shiftKey )
       {
         if( pos < 0 )
         {
@@ -557,7 +541,6 @@
             self.state.colSettings[idx].sortDir = "asc";
         }
       }
-
 
       //
       self.doSorting();
@@ -604,21 +587,19 @@
 	 * Status getters
 	 * ******************************************************************* */
     getState: function($el) {
-      var slimObj = $el.data("slimTableObj"), state;
+      const slimObj = $el.data("slimTableObj");
 
-      if(slimObj && slimObj.state)
-      {
-        state = slimObj.state;
-        return {
-          colNumber: state.colNumber,
-          itemsPerPage: state.itemsPerPage,
-          pagingStart: state.pagingStart,
-          colSettings: state.colSettings,
-          sortList: state.sortList
-        };
-      }
+      if(!slimObj || !slimObj.state)
+        return {};
 
-      return {};
+      const state = slimObj.state;
+      return {
+        colNumber: state.colNumber,
+        itemsPerPage: state.itemsPerPage,
+        pagingStart: state.pagingStart,
+        colSettings: state.colSettings,
+        sortList: state.sortList
+      };
     }
 
   };
@@ -631,7 +612,7 @@
       return SlimTable.getState( $(this[0]) );
 
     return this.each(function(){
-      var tbl = Object.create(SlimTable);
+      const tbl = Object.create(SlimTable);
       tbl.init( $(this) , options);
     });
   };

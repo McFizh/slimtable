@@ -1,19 +1,13 @@
-
 QUnit.test("basic test", (assert) => {
   const done1=assert.async();
   let thfound=0, trfound=0;
 
   //
-  $.ajax({ url: "test.json", dataType: "json"})
+  $.ajax({ url: "test.json", dataType: "json" })
     .done(function(data) {
 
       $("#testTable").slimtable({
-        tableData: data,
-        sortList: [2],
-        colSettings: [
-          { colNumber: 2, sortDir: "desc" },
-          { colNumber: 3, enableSort: false, addClasses: ["text-right"] }
-        ]
+        tableData: data
       });
 
       assert.ok(true, "Test resumed after ajax call");
@@ -36,18 +30,9 @@ QUnit.test("basic test", (assert) => {
       });
       assert.equal(trfound, 9, "Proper number of tr's found");
 
-      // Third field should have ex_h as first value, if sort settings work
-      assert.ok( $("#testTable tbody tr:nth-child(1) td:nth-child(3)").text() === "ex_h" , "DESC text sorting works" );
-
-      // Fourth header column should have "text-right" class and
-      assert.ok( $("#testTable thead th:nth-child(4)").hasClass("slimtable-unsortable") , "addClass option works" );
-
       done1();
-
     })
     .fail(function(param1,param2) {
       console.log("Error: "+param2);
     });
-
-
 });

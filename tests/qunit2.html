@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <title>Slimtable test 2</title>
 
-  <!-- Load jquery 3.6 -->
-  <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
-  <script src="../src/js/slimtable.js"></script>
+  <!-- Load jquery 3.7 -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="../src/slimtable.js"></script>
 
   <!-- Load local QUnit. -->
   <link rel="stylesheet" href="../node_modules/qunit/qunit/qunit.css" media="screen">
@@ -17,7 +17,8 @@
   <div id="qunit-fixture">
 
 	<table id='testTable'>
-	<thead>
+
+  <thead>
 	<tr>
 		<th>ID</th>
 		<th>First name</th>
@@ -30,70 +31,12 @@
 	</tr>
 	</thead>
 
-	<tbody>
-	</tbody>
+	<tbody></tbody>
 
 	</table>
 
   </div>
 
-
-<script type='text/javascript'>
-$(function() {
-	run_qunit();
-});
-
-function run_qunit() {
-
-test('basic test', function(assert) {
-	var done1=assert.async(),
-	    thfound=0,
-	    trfound=0;
-
-	expect(3);
-
-	//
-	$.ajax({
-		url: "test.json",
-		dataType: "json"
-	}).done(function(data) {
-
-		$("#testTable").slimtable({
-			tableData: data
-		});
-
-		ok(true, "Test resumed after ajax call");
-
-		// Table should have 5 TH elements with attributes 'unselectable'='on'
-		$("#testTable").find("thead").each(function(){
-			$(this).find("th").each(function(){
-				if( $(this).attr("unselectable") === "on" )
-					thfound++;
-			});
-		});
-
-		equal(thfound, 8, "Proper number of th's found");
-
-		// Table should have 10 Tr elements
-		$("#testTable").find("tbody").each(function(){
-			$(this).find("tr").each(function(){
-				trfound++;
-			});
-		});
-		equal(trfound, 9, "Proper number of tr's found");
-
-		done1();
-
-	}).fail(function(param1,param2) {
-		console.log("Error: "+param2);
-	});
-
-
-});
-
-}
-</script>
-
+  <script type='text/javascript' src="unitTest2.js"></script>
 </body>
-
 </html>

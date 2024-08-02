@@ -8,13 +8,13 @@ Official homepage of slimtable: [https://slimtable.mcfish.org](https://slimtable
 
 ### Supported jQuery version
 
-- jQuery >= 3.0
+- jQuery >= 3.6
 
 ### Supported browsers
 
-- FireFox 102+
-- Chrome 103+
-- IE Edge 103+
+- FireFox 110+
+- Chrome 113+
+- IE Edge 113+
 
 Might work with other browsers, but these are the ones that are officially supported.
 
