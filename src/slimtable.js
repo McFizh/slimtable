@@ -3,7 +3,7 @@
  *
  * Licensed under MIT license.
  *
- * @version 2.0.0
+ * @version 2.0.1
  * @author Pekka Harjamäki
  */
 // eslint-disable-next-line no-extra-semi
@@ -11,15 +11,12 @@
 
   "use strict";
 
-  var SlimTable = {
+  const SlimTable = {
 
     /* ******************************************************************* *
 	 * Class initializer
 	 * ******************************************************************* */
     init: function($el, options) {
-
-      $el.data("slimTableObj",this);
-
       this.settings = $.extend({
         tableData: null,
         dataUrl: null,
@@ -114,7 +111,7 @@
     },
 
     returnRowType: function(data) {
-      var patt_01 = /[^0-9]/g,
+      const patt_01 = /[^0-9]/g,
         patt_02 = /^[0-9]+([.,][0-9]+)?$/,
         patt_03 = /^([0-9]+([.,][0-9]+)?)\s*[%$€£e]?$/,
         patt_04 = /^[0-9]{1,2}[.-/][0-9]{1,2}[.-/][0-9]{4}$/;
@@ -148,7 +145,7 @@
 	 * Read data from ajax url / array / table
 	 * ******************************************************************* */
     readTable: function() {
-      var l1, l2, matchArr, tObj, tRow, tAttr;
+      let l1, l2, matchArr, tObj, tRow, tAttr;
 
       // Get data either from table, pre defined array or ajax url
       if( this.settings.dataUrl && this.settings.dataUrl.length > 2 )
@@ -260,7 +257,7 @@
     },
 
     processData: function(data) {
-      var l1, l2,  tRow;
+      let l1, l2, tRow;
 
       this.state.tblData = [];
 
@@ -277,7 +274,7 @@
 	 * Create table body / header
 	 * ******************************************************************* */
     createTableHead: function() {
-      var l1, t_item1, t_item2;
+      let l1, t_item1, t_item2;
 
       for(l1=0; l1<this.state.tableHeads.length; l1++)
       {
@@ -304,10 +301,9 @@
     },
 
     createTableBody: function() {
-      var end_pos = this.state.pagingStart + this.state.itemsPerPage,
-        t_cobj, t_obj1, t_obj2,
-        pages = Math.ceil( this.state.tblData.length / this.state.itemsPerPage ),
-        l1, l2, l3;
+      const pages = Math.ceil( this.state.tblData.length / this.state.itemsPerPage );
+      let end_pos = this.state.pagingStart + this.state.itemsPerPage;
+      let t_cobj, t_obj1, t_obj2, l1, l2, l3;
 
       //
       this.state.tableBody.empty();
@@ -369,14 +365,11 @@
 
       this.state.tableHeads.each(function(index) {
         $(this).attr("unselectable","on");
-
-        let tCfg = self.state.colSettings[index];
+        const tCfg = self.state.colSettings[index];
 
         if(tCfg && tCfg.enableSort)
         {
-          var tObj = $("<span></span>").
-            attr("unselectable","on").
-            addClass("slimtable-sprites");
+          const tObj = $("<span></span>").attr("unselectable","on").addClass("slimtable-sprites");
 
           if( tCfg.sortDir === "asc" )
           {
@@ -387,10 +380,7 @@
             tObj.addClass("slimtable-sortboth");
           }
 
-          $(this).
-            prepend(tObj).
-            css({ cursor: "pointer" }).
-            on("click",{ self: self},self.handleHeaderClick);
+          $(this).prepend(tObj).css({ cursor: "pointer" }).on("click",{ self: self},self.handleHeaderClick);
         } else {
           $(this).addClass("slimtable-unsortable");
         }
@@ -448,15 +438,12 @@
 
       //
       if(this.state.sortList.length>0)
-
         this.state.tblData.sort(function(a,b) {
-          var t1, ta, tb, l1,
-            slistLength=self.state.sortList.length,
-            same_item;
+          let ta, tb, l1, same_item;
+          const slistLength=self.state.sortList.length;
 
-          for(l1=0; l1<slistLength; l1++)
-          {
-            t1 = self.state.sortList[l1];
+          for(l1=0; l1<slistLength; l1++) {
+            const t1 = self.state.sortList[l1];
 
             // Swap variables, if sortdir = ascending
             if( self.state.colSettings[t1].sortDir === "desc" )
@@ -487,10 +474,7 @@
               continue;
 
             // Compare values
-            if ( self.state.colSettings[t1].rowType === 0 )
-              return( ta.localeCompare(tb) );
-            else
-              return( ta - tb );
+            return self.state.colSettings[t1].rowType === 0 ? ta.localeCompare(tb) : ta - tb;
           }
 
         });
@@ -551,22 +535,21 @@
     },
 
     handleIppChange: function(e) {
-      var self = e.data.self;
+      const self = e.data.self;
       self.state.itemsPerPage = parseInt(this.value);
       self.state.pagingStart = 0;
       self.createTableBody();
     },
 
     handlePageChange: function(event) {
-      var num = parseInt($(this).text())-1,
-        self = event.data.self,
-        pages = Math.ceil( self.state.tblData.length / self.state.itemsPerPage );
+      const num = parseInt($(this).text()) - 1;
+      const self = event.data.self;
+      const pages = Math.ceil( self.state.tblData.length / self.state.itemsPerPage );
 
-      if(num<0 || num>=pages)
-        return;
-
-      self.state.pagingStart = num * self.state.itemsPerPage;
-      self.createTableBody();
+      if(num>=0 && num<pages) {
+        self.state.pagingStart = num * self.state.itemsPerPage;
+        self.createTableBody();  
+      }
     },
 
     /* ******************************************************************* *
@@ -575,7 +558,7 @@
     sanityCheck: function()	{
       return !(
         this.state.tblData.length > 0 &&
-			this.state.colSettings.length !== this.state.tblData[0].data.length
+        this.state.colSettings.length !== this.state.tblData[0].data.length
       );
     },
 
@@ -586,19 +569,13 @@
     /* ******************************************************************* *
 	 * Status getters
 	 * ******************************************************************* */
-    getState: function($el) {
-      const slimObj = $el.data("slimTableObj");
-
-      if(!slimObj || !slimObj.state)
-        return {};
-
-      const state = slimObj.state;
+    getState: function() {
+      const state = this.state;
       return {
-        colNumber: state.colNumber,
-        itemsPerPage: state.itemsPerPage,
-        pagingStart: state.pagingStart,
         colSettings: state.colSettings,
-        sortList: state.sortList
+        sortList: state.sortList,
+        pagingStart: state.pagingStart,
+        itemsPerPage: state.itemsPerPage
       };
     }
 
@@ -608,13 +585,20 @@
    * Plugin main
    * ******************************************************************* */
   $.fn.slimtable = function(options) {
-    if( typeof(options) !== "undefined" && options === "getState" )
-      return SlimTable.getState( $(this[0]) );
+    const key = "plugin_slimtable";
 
-    return this.each(function(){
-      const tbl = Object.create(SlimTable);
-      tbl.init( $(this) , options);
-    });
+    if(options === undefined || typeof options === "object") {
+      return this.each( function() {
+        if(!$.data(this, key)) {
+          const tbl = Object.create(SlimTable);
+          tbl.init($(this), options);
+          $.data(this, key, tbl);
+        }
+      });
+    } else if(typeof options === "string" && options === "getState") {
+      const instance = $(this).data(key);
+      return instance ? instance.getState() : {};
+    }
   };
 
 }(jQuery));

@@ -1,5 +1,10 @@
 ### Changelog
 
+- **v2.0.1** - 3.8.2024
+
+  - Fixed getter (gave out non-existent property)
+  - Multiple initialization of plugin doesn't now break it
+
 - **v2.0.0** - 2.8.2024
 
   - Refactored folder structure
@@ -17,7 +22,7 @@
 - **v1.3.0** - 14.3.2016
 
   - Plugin structure is rewritten to support state getter. Now you can create a method to save table state to localstorage or similar.
-  - Once again had to increase target size from 6kB to 8kB :((
+  - Once again had to increase target size from 6kB to 8kB :(
 
 - **v1.2.7** - 8.3.2016
 
