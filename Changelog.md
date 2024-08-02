@@ -1,6 +1,6 @@
 ### Changelog
 
-- **v2.0.1** - 3.8.2024
+- **v2.0.1** - 2.8.2024
 
   - Fixed getter (gave out non-existent property)
   - Multiple initialization of plugin doesn't now break it
