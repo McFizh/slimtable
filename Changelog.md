@@ -1,5 +1,9 @@
 ### Changelog
 
+- **v2.0.2** - 12.7.2025
+
+  - Updated eslint from 8 to 9 + dev dependency updates
+
 - **v2.0.1** - 2.8.2024
 
   - Fixed getter (gave out non-existent property)
@@ -89,4 +93,5 @@
   - Lowered jQuery requirement to jQuery 1.8
 
 - **v1.0** - 25.7.2013
+
   - Public release

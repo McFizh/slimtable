@@ -26,8 +26,8 @@ Might work with other browsers, but these are the ones that are officially suppo
 - User definable callbacks before and after sorting
 - Optional HTML cleaner for sortable data
 - Autodetection of following values:
-  ++ Numeral values with/without the following prefixes: % $ € £ e
-  ++ Dates in format: dd-mm-yyyy , dd.mm.yyyy , dd/mm/yyyy
+  - Numeral values with/without the following prefixes: % $ € £ e
+  - Dates in format: dd-mm-yyyy , dd.mm.yyyy , dd/mm/yyyy
 
 ### How to build
 

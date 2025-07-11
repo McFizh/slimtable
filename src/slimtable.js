@@ -3,38 +3,38 @@
  *
  * Licensed under MIT license.
  *
- * @version 2.0.1
+ * @version 2.0.2
  * @author Pekka Harjamäki
  */
-// eslint-disable-next-line no-extra-semi
-;(function($) {
-
+;(function ($) {
   "use strict";
 
   const SlimTable = {
-
     /* ******************************************************************* *
-	 * Class initializer
-	 * ******************************************************************* */
-    init: function($el, options) {
-      this.settings = $.extend({
-        tableData: null,
-        dataUrl: null,
+     * Class initializer
+     * ******************************************************************* */
+    init: function ($el, options) {
+      this.settings = $.extend(
+        {
+          tableData: null,
+          dataUrl: null,
 
-        itemsPerPage: 10,
-        ippList: [5,10,20],
-        pagingStart: 0,
+          itemsPerPage: 10,
+          ippList: [5, 10, 20],
+          pagingStart: 0,
 
-        keepAttrs: [],
-        sortList: [],
-        colSettings: [],
+          keepAttrs: [],
+          sortList: [],
+          colSettings: [],
 
-        text1: "items/page",
-        text2: "Loading...",
+          text1: "items/page",
+          text2: "Loading...",
 
-        sortStartCB: null,
-        sortEndCB: null
-      }, options);
+          sortStartCB: null,
+          sortEndCB: null
+        },
+        options
+      );
 
       this.state = {
         showLoader: false,
@@ -51,7 +51,7 @@
       };
 
       // First we need to find both thead and tbody
-      if( this.state.tableHeads.length === 0 || this.state.tableBody.length === 0) {
+      if (this.state.tableHeads.length === 0 || this.state.tableBody.length === 0) {
         this.showError("thead/tbody missing from table!");
         return;
       }
@@ -60,7 +60,7 @@
       this.parseColSettings();
       this.readTable();
 
-      if( this.state.showLoader === false && !this.sanityCheck() ) {
+      if (this.state.showLoader === false && !this.sanityCheck()) {
         this.showError("Different number of columns in header and data!");
         return;
       }
@@ -68,15 +68,15 @@
       // Add sort bindings & paging buttons
       $el.addClass("slimtable");
       this.addSortIcons();
-      this.addPaging( $el );
+      this.addPaging($el);
 
       //
       this.doSorting();
     },
 
-    parseColSettings: function() {
-      for(let l1=0; l1<this.state.tableHeads.length; l1++) {
-        this.state.colSettings[l1]={
+    parseColSettings: function () {
+      for (let l1 = 0; l1 < this.state.tableHeads.length; l1++) {
+        this.state.colSettings[l1] = {
           enableSort: true,
           classes: [],
           stripHtml: false,
@@ -86,23 +86,23 @@
         };
 
         // has user set any custom settings to columns?
-        for(const t_obj of this.settings.colSettings) {
-          if( t_obj.colNumber !== l1 )
+        for (const t_obj of this.settings.colSettings) {
+          if (t_obj.colNumber !== l1) 
             continue;
 
-          if( t_obj.enableSort === false )
+          if (t_obj.enableSort === false) 
             this.state.colSettings[l1].enableSort = false;
 
-          if( t_obj.stripHtml === true )
+          if (t_obj.stripHtml === true) 
             this.state.colSettings[l1].stripHtml = true;
 
-          if( t_obj.sortDir === "asc" || t_obj.sortDir === "desc" )
+          if (t_obj.sortDir === "asc" || t_obj.sortDir === "desc") 
             this.state.colSettings[l1].sortDir = t_obj.sortDir;
 
-          if( t_obj.rowType >= 0 )
+          if (t_obj.rowType >= 0) 
             this.state.colSettings[l1].rowType = t_obj.rowType;
 
-          if( t_obj.addClasses && t_obj.addClasses.length>0)
+          if (t_obj.addClasses && t_obj.addClasses.length > 0) 
             this.state.colSettings[l1].classes = t_obj.addClasses;
 
           break;
@@ -110,113 +110,102 @@
       }
     },
 
-    returnRowType: function(data) {
+    returnRowType: function (data) {
       const patt_01 = /[^0-9]/g,
         patt_02 = /^[0-9]+([.,][0-9]+)?$/,
         patt_03 = /^([0-9]+([.,][0-9]+)?)\s*[%$€£e]?$/,
         patt_04 = /^[0-9]{1,2}[.-/][0-9]{1,2}[.-/][0-9]{4}$/;
 
       // Given element is empy
-      if( data.length === 0 )
-        return(-1);
+      if (data.length === 0) return -1;
 
       // Given element doesn't containt any other characters than numbers
-      if( !patt_01.test(data) )
-        return(1);
+      if (!patt_01.test(data)) return 1;
 
       // Givent element is most likely float number
-      if( patt_02.test(data) )
-        return(2);
+      if (patt_02.test(data)) return 2;
 
       // Float with cleanup
-      if( patt_03.test(data) )
-        return(3);
+      if (patt_03.test(data)) return 3;
 
       // Date .. maybe?
-      if( patt_04.test(data) )
-        return(4);
+      if (patt_04.test(data)) return 4;
 
       // String comparison
-      return(0);
-
+      return 0;
     },
 
     /* ******************************************************************* *
-	 * Read data from ajax url / array / table
-	 * ******************************************************************* */
-    readTable: function() {
+     * Read data from ajax url / array / table
+     * ******************************************************************* */
+    readTable: function () {
       let l1, l2, matchArr, tObj, tRow, tAttr;
 
       // Get data either from table, pre defined array or ajax url
-      if( this.settings.dataUrl && this.settings.dataUrl.length > 2 )
-      {
+      if (this.settings.dataUrl && this.settings.dataUrl.length > 2) {
         this.showLoader = true;
         $.ajax({
           url: this.settings.dataUrl,
           dataType: "json"
-        }).done(function(data){
-          this.processData(data);
-          this.showLoader = false;
-          this.createTableBody();
-        }).fail(function(par1,par2){
-          this.showError("Ajax error: "+par2);
-          return;
-        });
-
-      } else if(this.settings.tableData && this.settings.tableData.length>=0) {
-
+        })
+          .done(function (data) {
+            this.processData(data);
+            this.showLoader = false;
+            this.createTableBody();
+          })
+          .fail(function (par1, par2) {
+            this.showError("Ajax error: " + par2);
+            return;
+          });
+      } else if (this.settings.tableData && this.settings.tableData.length >= 0) {
         this.processData(this.settings.tableData);
-
       } else {
         const self = this;
-        this.state.tableBody.find("tr").each(function() {
+        this.state.tableBody.find("tr").each(function () {
           tRow = { data: [], attrs: [] };
 
-          for(const tVal of self.settings.keepAttrs) {
+          for (const tVal of self.settings.keepAttrs) {
             tAttr = $(this).attr(tVal);
-            if ( typeof tAttr !== "undefined" )
-              tRow.attrs.push({ attr: tVal, value: tAttr});
+            if (typeof tAttr !== "undefined") tRow.attrs.push({ attr: tVal, value: tAttr });
           }
 
-          $(this).find("td").each(function() {
-            tObj = { orig: $(this).html() , attrs: [] , clean: null };
+          $(this)
+            .find("td")
+            .each(function () {
+              tObj = { orig: $(this).html(), attrs: [], clean: null };
 
-            // Does td contain sort-data  attr?
-            tAttr = $(this).attr("sort-data");
-            if ( typeof tAttr !== "undefined" && tAttr !== null )
-              tObj.clean = tAttr;
+              // Does td contain sort-data  attr?
+              tAttr = $(this).attr("sort-data");
+              if (typeof tAttr !== "undefined" && tAttr !== null) 
+                tObj.clean = tAttr;
 
-            // Find attributes to keep
-            for(const tVal of self.settings.keepAttrs) {
-              tAttr = $(this).attr(tVal);
-              if ( typeof tAttr !== "undefined" )
-                tObj.attrs.push({ attr: tVal, value: tAttr});
-            }
-            tRow.data.push( tObj );
-          });
+              // Find attributes to keep
+              for (const tVal of self.settings.keepAttrs) {
+                tAttr = $(this).attr(tVal);
+                if (typeof tAttr !== "undefined") 
+                  tObj.attrs.push({ attr: tVal, value: tAttr });
+              }
+              tRow.data.push(tObj);
+            });
 
           self.state.tblData.push(tRow);
         });
       }
 
       //
-      if(!this.sanityCheck())
-        return;
+      if (!this.sanityCheck()) return;
 
       /*********************** Determine col types ***********************/
 
-      for(l1=0; l1<this.state.tableHeads.length; l1++) {
-        matchArr=[ 0, 0, 0, 0, 0 ];
+      for (l1 = 0; l1 < this.state.tableHeads.length; l1++) {
+        matchArr = [0, 0, 0, 0, 0];
 
-        if(this.state.colSettings[l1].rowType === -1)
-        {
-          for(l2=0; l2<this.state.tblData.length; l2++)
-          {
+        if (this.state.colSettings[l1].rowType === -1) {
+          for (l2 = 0; l2 < this.state.tblData.length; l2++) {
             // Remove HTML, TRIM data and create array with cleaned & original data
             tObj = this.state.tblData[l2].data[l1];
 
-            if ( tObj.clean === null )
-            {
+            if (tObj.clean === null) {
               tObj = this.state.colSettings[l1].stripHtml ? this.state.cleanerDiv.html(tObj.orig).text() : tObj.orig;
               tObj = $.trim(tObj).toLowerCase();
               this.state.tblData[l2].data[l1].clean = tObj;
@@ -224,84 +213,76 @@
               tObj = tObj.clean;
             }
 
-            tAttr = this.returnRowType( tObj );
-            if(tAttr > 0)
-              matchArr[ tAttr ]++;
+            tAttr = this.returnRowType(tObj);
+            if (tAttr > 0) 
+              matchArr[tAttr]++;
           }
 
-          this.state.colSettings[l1].rowType = $.inArray( Math.max.apply(this, matchArr) , matchArr );
+          this.state.colSettings[l1].rowType = $.inArray(Math.max.apply(this, matchArr), matchArr);
         }
 
         // Cleanup data bases on type
-        for(l2=0; l2<this.state.tblData.length; l2++)
-        {
+        for (l2 = 0; l2 < this.state.tblData.length; l2++) {
           tAttr = this.state.colSettings[l1].rowType;
           tObj = this.state.tblData[l2].data[l1].clean;
 
-          if ( tAttr === 0 )
+          if (tAttr === 0) 
             this.state.tblData[l2].data[l1].clean = String(tObj);
 
           // Remove end sign, change , to . and run parsefloat
-          if ( tAttr === 2 || tAttr === 3 )
-            this.state.tblData[l2].data[l1].clean = parseFloat(tObj.replace(",","."));
+          if (tAttr === 2 || tAttr === 3) 
+            this.state.tblData[l2].data[l1].clean = parseFloat(tObj.replace(",", "."));
 
           // Convert values to dates
-          if ( tAttr === 4 )
-          {
+          if (tAttr === 4) {
             tObj = tObj.split(/[./-]/);
-            this.state.tblData[l2].data[l1].clean = new Date ( tObj[2], tObj[1], tObj[0] );
+            this.state.tblData[l2].data[l1].clean = new Date(tObj[2], tObj[1], tObj[0]);
           }
         }
       }
-
     },
 
-    processData: function(data) {
+    processData: function (data) {
       let l1, l2, tRow;
 
       this.state.tblData = [];
 
-      for(l1=0; l1<data.length; l1++)
-      {
-        tRow = { data: [] , attrs: [] };
-        for(l2=0; l2<data[l1].length; l2++)
-          tRow.data.push( { orig: data[l1][l2], attrs: [], clean: null } );
+      for (l1 = 0; l1 < data.length; l1++) {
+        tRow = { data: [], attrs: [] };
+        for (l2 = 0; l2 < data[l1].length; l2++) 
+          tRow.data.push({ orig: data[l1][l2], attrs: [], clean: null });
         this.state.tblData.push(tRow);
       }
     },
 
     /* ******************************************************************* *
-	 * Create table body / header
-	 * ******************************************************************* */
-    createTableHead: function() {
+     * Create table body / header
+     * ******************************************************************* */
+    createTableHead: function () {
       let l1, t_item1, t_item2;
 
-      for(l1=0; l1<this.state.tableHeads.length; l1++)
-      {
-        if( !this.state.colSettings[l1] || !this.state.colSettings[l1].enableSort )
+      for (l1 = 0; l1 < this.state.tableHeads.length; l1++) {
+        if (!this.state.colSettings[l1] || !this.state.colSettings[l1].enableSort) 
           continue;
 
         t_item1 = $(this.state.tableHeads[l1]);
         t_item2 = t_item1.find("span");
 
-        if( $.inArray(l1,this.state.sortList) < 0 )
-        {
+        if ($.inArray(l1, this.state.sortList) < 0) {
           t_item1.removeClass("slimtable-activeth");
-          t_item2.removeClass("slimtable-sortasc").
-            removeClass("slimtable-sortdesc").
-            addClass("slimtable-sortboth");
+          t_item2.removeClass("slimtable-sortasc").removeClass("slimtable-sortdesc").addClass("slimtable-sortboth");
         } else {
           t_item1.addClass("slimtable-activeth");
-          t_item2.removeClass("slimtable-sortboth").
-            removeClass("slimtable-sort" + (this.state.colSettings[l1].sortDir === "asc"?"desc":"asc") ).
-            addClass("slimtable-sort" + this.state.colSettings[l1].sortDir );
+          t_item2
+            .removeClass("slimtable-sortboth")
+            .removeClass("slimtable-sort" + (this.state.colSettings[l1].sortDir === "asc" ? "desc" : "asc"))
+            .addClass("slimtable-sort" + this.state.colSettings[l1].sortDir);
         }
-
       }
     },
 
-    createTableBody: function() {
-      const pages = Math.ceil( this.state.tblData.length / this.state.itemsPerPage );
+    createTableBody: function () {
+      const pages = Math.ceil(this.state.tblData.length / this.state.itemsPerPage);
       let end_pos = this.state.pagingStart + this.state.itemsPerPage;
       let t_cobj, t_obj1, t_obj2, l1, l2, l3;
 
@@ -310,28 +291,26 @@
       end_pos = end_pos > this.state.tblData.length ? this.state.tblData.length : end_pos;
 
       //
-      for(l1=this.state.pagingStart; l1<end_pos; l1++)
-      {
+      for (l1 = this.state.pagingStart; l1 < end_pos; l1++) {
         t_obj1 = $("<tr></tr>");
 
         // Restore attributes to TR
-        for(l3=0; l3<this.state.tblData[l1].attrs.length; l3++)
+        for (l3 = 0; l3 < this.state.tblData[l1].attrs.length; l3++)
           $(t_obj1).attr(this.state.tblData[l1].attrs[l3].attr, this.state.tblData[l1].attrs[l3].value);
 
         // Create TD elements
-        for(l2=0; l2<this.state.tblData[l1].data.length; l2++)
-        {
+        for (l2 = 0; l2 < this.state.tblData[l1].data.length; l2++) {
           t_cobj = this.state.tblData[l1].data[l2];
 
           // Create TD element
           t_obj2 = $("<td></td>").html(t_cobj.orig);
 
           // Restore attributes
-          for(l3=0; l3<t_cobj.attrs.length; l3++)
+          for (l3 = 0; l3 < t_cobj.attrs.length; l3++) 
             $(t_obj2).attr(t_cobj.attrs[l3].attr, t_cobj.attrs[l3].value);
 
           // Add extra css classes to td
-          for(l3=0; l3<this.state.colSettings[l2].classes.length; l3++)
+          for (l3 = 0; l3 < this.state.colSettings[l2].classes.length; l3++)
             $(t_obj2).addClass(this.state.colSettings[l2].classes[l3]);
 
           // Add td to tr
@@ -343,111 +322,99 @@
 
       // Create paging buttons
       $(this.state.btnContainer).empty();
-      for(l1=0; l1<pages; l1++)
-      {
+      for (l1 = 0; l1 < pages; l1++) {
         t_obj1 = document.createElement("div");
-        $(t_obj1).addClass("slimtable-page-btn").
-          on("click",{self: this},this.handlePageChange).
-          text(l1+1);
+        $(t_obj1)
+          .addClass("slimtable-page-btn")
+          .on("click", { self: this }, this.handlePageChange)
+          .text(l1 + 1);
 
-        if( l1*this.state.itemsPerPage === this.state.pagingStart )
+        if (l1 * this.state.itemsPerPage === this.state.pagingStart) 
           $(t_obj1).addClass("active");
 
-        $(this.state.btnContainer).append( t_obj1 );
+        $(this.state.btnContainer).append(t_obj1);
       }
     },
 
     /* ******************************************************************* *
-	 * Add sorting icons / buttons
-	 * ******************************************************************* */
-    addSortIcons: function() {
+     * Add sorting icons / buttons
+     * ******************************************************************* */
+    addSortIcons: function () {
       const self = this;
 
-      this.state.tableHeads.each(function(index) {
-        $(this).attr("unselectable","on");
+      this.state.tableHeads.each(function (index) {
+        $(this).attr("unselectable", "on");
         const tCfg = self.state.colSettings[index];
 
-        if(tCfg && tCfg.enableSort)
-        {
-          const tObj = $("<span></span>").attr("unselectable","on").addClass("slimtable-sprites");
+        if (tCfg && tCfg.enableSort) {
+          const tObj = $("<span></span>").attr("unselectable", "on").addClass("slimtable-sprites");
 
-          if( tCfg.sortDir === "asc" )
-          {
+          if (tCfg.sortDir === "asc") {
             tObj.addClass("slimtable-sortasc");
-          } else if( tCfg.sortDir === "desc" ) {
+          } else if (tCfg.sortDir === "desc") {
             tObj.addClass("slimtable-sortdesc");
           } else {
             tObj.addClass("slimtable-sortboth");
           }
 
-          $(this).prepend(tObj).css({ cursor: "pointer" }).on("click",{ self: self},self.handleHeaderClick);
+          $(this).prepend(tObj).css({ cursor: "pointer" }).on("click", { self: self }, self.handleHeaderClick);
         } else {
           $(this).addClass("slimtable-unsortable");
         }
       });
     },
 
-    addPaging: function( tblObj ) {
+    addPaging: function (tblObj) {
       let tObj1, tObj2, selector;
 
       //
-      selector = $("<select></select>").
-        addClass("slimtable-paging-select").
-        on("change",{self: this},this.handleIppChange);
+      selector = $("<select></select>")
+        .addClass("slimtable-paging-select")
+        .on("change", { self: this }, this.handleIppChange);
 
-      for(const tObj1 of this.settings.ippList) {
+      for (const tObj1 of this.settings.ippList) {
         tObj2 = $("<option></option>").val(tObj1).text(tObj1);
 
-        if( tObj1 === this.settings.itemsPerPage )
-          tObj2.attr("selected","selected");
+        if (tObj1 === this.settings.itemsPerPage) tObj2.attr("selected", "selected");
 
         $(selector).append(tObj2);
       }
 
       // Create container for paging buttons
-      tObj2 = $("<div></div>").
-        addClass("slimtable-paging-btnsdiv");
+      tObj2 = $("<div></div>").addClass("slimtable-paging-btnsdiv");
       this.state.btnContainer = tObj2;
 
       //
-      tObj1 = $("<div></div>").
-        addClass("slimtable-paging-div").
-        append(tObj2);
+      tObj1 = $("<div></div>").addClass("slimtable-paging-div").append(tObj2);
 
       // Create container for select
-      tObj2 = $("<div></div>").
-        addClass("slimtable-paging-seldiv").
-        append(selector).
-        append(this.settings.text1);
+      tObj2 = $("<div></div>").addClass("slimtable-paging-seldiv").append(selector).append(this.settings.text1);
       $(tObj1).append(tObj2);
 
       // Move table to container div
-      tObj2 = $("<div></div>").
-        addClass("slimtable-container-div").
-        append(tObj1);
+      tObj2 = $("<div></div>").addClass("slimtable-container-div").append(tObj1);
 
       tblObj.before(tObj2);
       tblObj.insertBefore(tObj1);
     },
 
     /* ******************************************************************* *
-	 * Data sorting method
-	 * ******************************************************************* */
-    doSorting: function() {
+     * Data sorting method
+     * ******************************************************************* */
+    doSorting: function () {
       const self = this;
 
       //
-      if(this.state.sortList.length>0)
-        this.state.tblData.sort(function(a,b) {
+      if (this.state.sortList.length > 0)
+        this.state.tblData.sort(function (a, b) {
           let ta, tb, l1, same_item;
-          const slistLength=self.state.sortList.length;
+          const slistLength = self.state.sortList.length;
 
-          for(l1=0; l1<slistLength; l1++) {
+          for (l1 = 0; l1 < slistLength; l1++) {
             const t1 = self.state.sortList[l1];
 
             // Swap variables, if sortdir = ascending
-            if( self.state.colSettings[t1].sortDir === "desc" )
-            {
+            if (self.state.colSettings[t1].sortDir === "desc") {
               ta = b.data[t1].clean;
               tb = a.data[t1].clean;
             } else {
@@ -457,26 +424,20 @@
 
             // Given variables match, move to next sort parameter
             same_item = false;
-            if ( self.state.colSettings[t1].rowType === 0 )
-            {
-              if ( ta.localeCompare(tb) === 0 )
-                same_item = true;
-            } else if (self.state.colSettings[t1].rowType === 4 ) {
-              if ( ta - tb === 0 )
-                same_item = true;
+            if (self.state.colSettings[t1].rowType === 0) {
+              if (ta.localeCompare(tb) === 0) same_item = true;
+            } else if (self.state.colSettings[t1].rowType === 4) {
+              if (ta - tb === 0) same_item = true;
             } else {
-              if (ta === tb)
-                same_item = true;
+              if (ta === tb) same_item = true;
             }
 
             //
-            if( same_item && l1 < (slistLength-1) )
-              continue;
+            if (same_item && l1 < slistLength - 1) continue;
 
             // Compare values
             return self.state.colSettings[t1].rowType === 0 ? ta.localeCompare(tb) : ta - tb;
           }
-
         });
 
       //
@@ -485,44 +446,36 @@
     },
 
     /* ******************************************************************* *
-	 * Event handlers
-	 * ******************************************************************* */
-    handleHeaderClick: function(e) {
+     * Event handlers
+     * ******************************************************************* */
+    handleHeaderClick: function (e) {
       const self = e.data.self;
       const idx = $(this).index();
-      const pos = $.inArray(idx,self.state.sortList);
+      const pos = $.inArray(idx, self.state.sortList);
 
       //
       e.preventDefault();
 
       // Execute sort start callback, if one is defined
-      if(self.settings.sortStartCB && typeof self.settings.sortStartCB === "function")
+      if (self.settings.sortStartCB && typeof self.settings.sortStartCB === "function")
         self.settings.sortStartCB.call(self);
 
       // Shift click
-      if( e.shiftKey )
-      {
-        if( pos < 0 )
-        {
-          self.state.sortList.push( idx );
+      if (e.shiftKey) {
+        if (pos < 0) {
+          self.state.sortList.push(idx);
           self.state.colSettings[idx].sortDir = "asc";
         } else {
-          if(self.state.colSettings[idx].sortDir === "asc")
-            self.state.colSettings[idx].sortDir = "desc";
-          else
-            self.state.colSettings[idx].sortDir = "asc";
+          if (self.state.colSettings[idx].sortDir === "asc") self.state.colSettings[idx].sortDir = "desc";
+          else self.state.colSettings[idx].sortDir = "asc";
         }
-
       } else {
-        self.state.sortList = [ idx ];
-        if( pos < 0 )
-        {
+        self.state.sortList = [idx];
+        if (pos < 0) {
           self.state.colSettings[idx].sortDir = "asc";
         } else {
-          if(self.state.colSettings[idx].sortDir === "asc")
-            self.state.colSettings[idx].sortDir = "desc";
-          else
-            self.state.colSettings[idx].sortDir = "asc";
+          if (self.state.colSettings[idx].sortDir === "asc") self.state.colSettings[idx].sortDir = "desc";
+          else self.state.colSettings[idx].sortDir = "asc";
         }
       }
 
@@ -530,46 +483,42 @@
       self.doSorting();
 
       // Execute sort end callback, if one is defined
-      if(self.settings.sortEndCB && typeof self.settings.sortEndCB === "function")
-        self.settings.sortEndCB.call(self);
+      if (self.settings.sortEndCB && typeof self.settings.sortEndCB === "function") self.settings.sortEndCB.call(self);
     },
 
-    handleIppChange: function(e) {
+    handleIppChange: function (e) {
       const self = e.data.self;
       self.state.itemsPerPage = parseInt(this.value);
       self.state.pagingStart = 0;
       self.createTableBody();
     },
 
-    handlePageChange: function(event) {
+    handlePageChange: function (event) {
       const num = parseInt($(this).text()) - 1;
       const self = event.data.self;
-      const pages = Math.ceil( self.state.tblData.length / self.state.itemsPerPage );
+      const pages = Math.ceil(self.state.tblData.length / self.state.itemsPerPage);
 
-      if(num>=0 && num<pages) {
+      if (num >= 0 && num < pages) {
         self.state.pagingStart = num * self.state.itemsPerPage;
-        self.createTableBody();  
+        self.createTableBody();
       }
     },
 
     /* ******************************************************************* *
-	 * Structure checker & error method
-	 * ******************************************************************* */
-    sanityCheck: function()	{
-      return !(
-        this.state.tblData.length > 0 &&
-        this.state.colSettings.length !== this.state.tblData[0].data.length
-      );
+     * Structure checker & error method
+     * ******************************************************************* */
+    sanityCheck: function () {
+      return !(this.state.tblData.length > 0 && this.state.colSettings.length !== this.state.tblData[0].data.length);
     },
 
-    showError: function(msg) {
-      console.log("Slimtable: "+msg);
+    showError: function (msg) {
+      console.log("Slimtable: " + msg);
     },
 
     /* ******************************************************************* *
-	 * Status getters
-	 * ******************************************************************* */
-    getState: function() {
+     * Status getters
+     * ******************************************************************* */
+    getState: function () {
       const state = this.state;
       return {
         colSettings: state.colSettings,
@@ -578,27 +527,25 @@
         itemsPerPage: state.itemsPerPage
       };
     }
-
   };
 
   /* ******************************************************************* *
    * Plugin main
    * ******************************************************************* */
-  $.fn.slimtable = function(options) {
+  $.fn.slimtable = function (options) {
     const key = "plugin_slimtable";
 
-    if(options === undefined || typeof options === "object") {
-      return this.each( function() {
-        if(!$.data(this, key)) {
+    if (options === undefined || typeof options === "object") {
+      return this.each(function () {
+        if (!$.data(this, key)) {
           const tbl = Object.create(SlimTable);
           tbl.init($(this), options);
           $.data(this, key, tbl);
         }
       });
-    } else if(typeof options === "string" && options === "getState") {
+    } else if (typeof options === "string" && options === "getState") {
       const instance = $(this).data(key);
       return instance ? instance.getState() : {};
     }
   };
-
-}(jQuery));
+})(jQuery);
