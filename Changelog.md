@@ -2,6 +2,7 @@
 
 - **v2.0.2** - 12.7.2025
 
+  - Fixed issue with data loader
   - Updated eslint from 8 to 9 + dev dependency updates
 
 - **v2.0.1** - 2.8.2024

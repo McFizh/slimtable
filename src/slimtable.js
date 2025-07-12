@@ -87,22 +87,22 @@
 
         // has user set any custom settings to columns?
         for (const t_obj of this.settings.colSettings) {
-          if (t_obj.colNumber !== l1) 
+          if (t_obj.colNumber !== l1)
             continue;
 
-          if (t_obj.enableSort === false) 
+          if (t_obj.enableSort === false)
             this.state.colSettings[l1].enableSort = false;
 
-          if (t_obj.stripHtml === true) 
+          if (t_obj.stripHtml === true)
             this.state.colSettings[l1].stripHtml = true;
 
-          if (t_obj.sortDir === "asc" || t_obj.sortDir === "desc") 
+          if (t_obj.sortDir === "asc" || t_obj.sortDir === "desc")
             this.state.colSettings[l1].sortDir = t_obj.sortDir;
 
-          if (t_obj.rowType >= 0) 
+          if (t_obj.rowType >= 0)
             this.state.colSettings[l1].rowType = t_obj.rowType;
 
-          if (t_obj.addClasses && t_obj.addClasses.length > 0) 
+          if (t_obj.addClasses && t_obj.addClasses.length > 0)
             this.state.colSettings[l1].classes = t_obj.addClasses;
 
           break;
@@ -140,6 +140,7 @@
      * ******************************************************************* */
     readTable: function () {
       let l1, l2, matchArr, tObj, tRow, tAttr;
+      const self = this;
 
       // Get data either from table, pre defined array or ajax url
       if (this.settings.dataUrl && this.settings.dataUrl.length > 2) {
@@ -149,18 +150,17 @@
           dataType: "json"
         })
           .done(function (data) {
-            this.processData(data);
-            this.showLoader = false;
-            this.createTableBody();
+            self.processData(data);
+            self.showLoader = false;
+            self.createTableBody();
           })
           .fail(function (par1, par2) {
-            this.showError("Ajax error: " + par2);
+            self.showError("Ajax error: " + par2);
             return;
           });
       } else if (this.settings.tableData && this.settings.tableData.length >= 0) {
         this.processData(this.settings.tableData);
       } else {
-        const self = this;
         this.state.tableBody.find("tr").each(function () {
           tRow = { data: [], attrs: [] };
 
@@ -176,13 +176,13 @@
 
               // Does td contain sort-data  attr?
               tAttr = $(this).attr("sort-data");
-              if (typeof tAttr !== "undefined" && tAttr !== null) 
+              if (typeof tAttr !== "undefined" && tAttr !== null)
                 tObj.clean = tAttr;
 
               // Find attributes to keep
               for (const tVal of self.settings.keepAttrs) {
                 tAttr = $(this).attr(tVal);
-                if (typeof tAttr !== "undefined") 
+                if (typeof tAttr !== "undefined")
                   tObj.attrs.push({ attr: tVal, value: tAttr });
               }
               tRow.data.push(tObj);
@@ -214,7 +214,7 @@
             }
 
             tAttr = this.returnRowType(tObj);
-            if (tAttr > 0) 
+            if (tAttr > 0)
               matchArr[tAttr]++;
           }
 
@@ -226,11 +226,11 @@
           tAttr = this.state.colSettings[l1].rowType;
           tObj = this.state.tblData[l2].data[l1].clean;
 
-          if (tAttr === 0) 
+          if (tAttr === 0)
             this.state.tblData[l2].data[l1].clean = String(tObj);
 
           // Remove end sign, change , to . and run parsefloat
-          if (tAttr === 2 || tAttr === 3) 
+          if (tAttr === 2 || tAttr === 3)
             this.state.tblData[l2].data[l1].clean = parseFloat(tObj.replace(",", "."));
 
           // Convert values to dates
@@ -249,7 +249,7 @@
 
       for (l1 = 0; l1 < data.length; l1++) {
         tRow = { data: [], attrs: [] };
-        for (l2 = 0; l2 < data[l1].length; l2++) 
+        for (l2 = 0; l2 < data[l1].length; l2++)
           tRow.data.push({ orig: data[l1][l2], attrs: [], clean: null });
         this.state.tblData.push(tRow);
       }
@@ -262,7 +262,7 @@
       let l1, t_item1, t_item2;
 
       for (l1 = 0; l1 < this.state.tableHeads.length; l1++) {
-        if (!this.state.colSettings[l1] || !this.state.colSettings[l1].enableSort) 
+        if (!this.state.colSettings[l1] || !this.state.colSettings[l1].enableSort)
           continue;
 
         t_item1 = $(this.state.tableHeads[l1]);
@@ -306,7 +306,7 @@
           t_obj2 = $("<td></td>").html(t_cobj.orig);
 
           // Restore attributes
-          for (l3 = 0; l3 < t_cobj.attrs.length; l3++) 
+          for (l3 = 0; l3 < t_cobj.attrs.length; l3++)
             $(t_obj2).attr(t_cobj.attrs[l3].attr, t_cobj.attrs[l3].value);
 
           // Add extra css classes to td
@@ -329,7 +329,7 @@
           .on("click", { self: this }, this.handlePageChange)
           .text(l1 + 1);
 
-        if (l1 * this.state.itemsPerPage === this.state.pagingStart) 
+        if (l1 * this.state.itemsPerPage === this.state.pagingStart)
           $(t_obj1).addClass("active");
 
         $(this.state.btnContainer).append(t_obj1);
