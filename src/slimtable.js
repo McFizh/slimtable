@@ -13,7 +13,7 @@
     /* ******************************************************************* *
      * Class initializer
      * ******************************************************************* */
-    init: function ($el, options) {
+    init1: function ($el, options) {
       this.settings = $.extend(
         {
           tableData: null,
@@ -50,17 +50,19 @@
         tableBody: $el.find("tbody")
       };
 
-      // First we need to find both thead and tbody
+      // First we need to make sure there's table head and body
       if (this.state.tableHeads.length === 0 || this.state.tableBody.length === 0) {
         this.showError("thead/tbody missing from table!");
         return;
       }
 
-      // Read table headers + data
+      // Then read table headers and initialize data
       this.parseColSettings();
-      this.readTable();
+      this.readTable($el);
+    },
 
-      if (this.state.showLoader === false && !this.sanityCheck()) {
+    init2: function ($el) {
+      if (!this.sanityCheck()) {
         this.showError("Different number of columns in header and data!");
         return;
       }
@@ -138,62 +140,84 @@
     /* ******************************************************************* *
      * Read data from ajax url / array / table
      * ******************************************************************* */
-    readTable: function () {
-      let l1, l2, matchArr, tObj, tRow, tAttr;
+    readTable: function ($el) {
+      let tObj, tRow, tAttr;
       const self = this;
 
-      // Get data either from table, pre defined array or ajax url
+      // If dataUrl attribute is set, then load the data and continue after loading is done
       if (this.settings.dataUrl && this.settings.dataUrl.length > 2) {
-        this.showLoader = true;
+        this.state.showLoader = true;
         $.ajax({
           url: this.settings.dataUrl,
           dataType: "json"
         })
           .done(function (data) {
             self.processData(data);
-            self.showLoader = false;
-            self.createTableBody();
+            self.state.showLoader = false;
+            self.init2($el);
           })
           .fail(function (par1, par2) {
             self.showError("Ajax error: " + par2);
             return;
           });
-      } else if (this.settings.tableData && this.settings.tableData.length >= 0) {
-        this.processData(this.settings.tableData);
-      } else {
-        this.state.tableBody.find("tr").each(function () {
-          tRow = { data: [], attrs: [] };
-
-          for (const tVal of self.settings.keepAttrs) {
-            tAttr = $(this).attr(tVal);
-            if (typeof tAttr !== "undefined") tRow.attrs.push({ attr: tVal, value: tAttr });
-          }
-
-          $(this)
-            .find("td")
-            .each(function () {
-              tObj = { orig: $(this).html(), attrs: [], clean: null };
-
-              // Does td contain sort-data  attr?
-              tAttr = $(this).attr("sort-data");
-              if (typeof tAttr !== "undefined" && tAttr !== null)
-                tObj.clean = tAttr;
-
-              // Find attributes to keep
-              for (const tVal of self.settings.keepAttrs) {
-                tAttr = $(this).attr(tVal);
-                if (typeof tAttr !== "undefined")
-                  tObj.attrs.push({ attr: tVal, value: tAttr });
-              }
-              tRow.data.push(tObj);
-            });
-
-          self.state.tblData.push(tRow);
-        });
+        return;
       }
 
-      //
-      if (!this.sanityCheck()) return;
+      // Does tableData contains anything?
+      if (this.settings.tableData && this.settings.tableData.length >= 0) {
+        this.processData(this.settings.tableData);
+        this.init2($el);
+        return;
+      }
+
+      // As last resort we'll read the html itself
+      this.state.tableBody.find("tr").each(function () {
+        tRow = { data: [], attrs: [] };
+
+        for (const tVal of self.settings.keepAttrs) {
+          tAttr = $(this).attr(tVal);
+          if (typeof tAttr !== "undefined") tRow.attrs.push({ attr: tVal, value: tAttr });
+        }
+
+        $(this)
+          .find("td")
+          .each(function () {
+            tObj = { orig: $(this).html(), attrs: [], clean: null };
+
+            // Does td contain sort-data  attr?
+            tAttr = $(this).attr("sort-data");
+            if (typeof tAttr !== "undefined" && tAttr !== null)
+              tObj.clean = tAttr;
+
+            // Find attributes to keep
+            for (const tVal of self.settings.keepAttrs) {
+              tAttr = $(this).attr(tVal);
+              if (typeof tAttr !== "undefined")
+                tObj.attrs.push({ attr: tVal, value: tAttr });
+            }
+            tRow.data.push(tObj);
+          });
+
+        self.state.tblData.push(tRow);
+      });
+
+      this.processData(null);
+      this.init2($el);
+    },
+
+    processData: function (data) {
+      let l1, l2, matchArr, tRow, tObj, tAttr;
+
+      if (data !== null) {
+        this.state.tblData = [];
+
+        for (l1 = 0; l1 < data.length; l1++) {
+          tRow = { data: [], attrs: [] };
+          for (l2 = 0; l2 < data[l1].length; l2++)
+            tRow.data.push({ orig: data[l1][l2], attrs: [], clean: null });
+          this.state.tblData.push(tRow);
+        }
+      }
 
       /*********************** Determine col types ***********************/
 
@@ -221,7 +245,7 @@
           this.state.colSettings[l1].rowType = $.inArray(Math.max.apply(this, matchArr), matchArr);
         }
 
-        // Cleanup data bases on type
+        // Cleanup data based on type
         for (l2 = 0; l2 < this.state.tblData.length; l2++) {
           tAttr = this.state.colSettings[l1].rowType;
           tObj = this.state.tblData[l2].data[l1].clean;
@@ -239,19 +263,6 @@
             this.state.tblData[l2].data[l1].clean = new Date(tObj[2], tObj[1], tObj[0]);
           }
         }
-      }
-    },
-
-    processData: function (data) {
-      let l1, l2, tRow;
-
-      this.state.tblData = [];
-
-      for (l1 = 0; l1 < data.length; l1++) {
-        tRow = { data: [], attrs: [] };
-        for (l2 = 0; l2 < data[l1].length; l2++)
-          tRow.data.push({ orig: data[l1][l2], attrs: [], clean: null });
-        this.state.tblData.push(tRow);
       }
     },
 
@@ -483,7 +494,8 @@
       self.doSorting();
 
       // Execute sort end callback, if one is defined
-      if (self.settings.sortEndCB && typeof self.settings.sortEndCB === "function") self.settings.sortEndCB.call(self);
+      if (self.settings.sortEndCB && typeof self.settings.sortEndCB === "function")
+        self.settings.sortEndCB.call(self);
     },
 
     handleIppChange: function (e) {
@@ -539,7 +551,9 @@
       return this.each(function () {
         if (!$.data(this, key)) {
           const tbl = Object.create(SlimTable);
-          tbl.init($(this), options);
+
+          // Call the first part of initialization
+          tbl.init1($(this), options);
           $.data(this, key, tbl);
         }
       });

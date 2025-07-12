@@ -28,7 +28,7 @@ QUnit.test("basic test", (assert) => {
 
       assert.equal(thfound, 8, "Proper number of th's found");
 
-      // Table should have 9 Tr elements
+      // Table should have 9 data rows elements
       $("#testTable").find("tbody").each(function () {
         $(this).find("tr").each(function () {
           trfound++;
@@ -36,8 +36,8 @@ QUnit.test("basic test", (assert) => {
       });
       assert.equal(trfound, 9, "Proper number of tr's found");
 
-      // Third field should have ex_h as first value, if sort settings work
-      assert.ok($("#testTable tbody tr:nth-child(1) td:nth-child(3)").text() === "ex_h", "DESC text sorting works");
+      // First row, third field should have ex_h as first value, if sort settings work
+      assert.equal($("#testTable tbody tr:nth-child(1) td:nth-child(3)").text(), "ex_h", "DESC text sorting works")
 
       // Fourth header column should have "text-right" class and
       assert.ok($("#testTable thead th:nth-child(4)").hasClass("slimtable-unsortable"), "addClass option works");
