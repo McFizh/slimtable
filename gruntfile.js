@@ -37,24 +37,13 @@ module.exports = function (grunt) {
         filter: "isFile",
       },
     },
-
-    qunit: {
-      options: {
-        puppeteer: {
-          args: [ "--disable-web-security" ]
-        }
-      },
-      all: ["tests/*.html"]
-    },
   });
 
   // ----------------------------------------------------
   grunt.loadNpmTasks("grunt-contrib-clean");
   grunt.loadNpmTasks("grunt-contrib-uglify");
   grunt.loadNpmTasks("grunt-contrib-copy");
-  grunt.loadNpmTasks("grunt-contrib-qunit");
 
   // ----------------------------------------------------
   grunt.registerTask("default", ["clean:dist", "uglify:main", "copy:css"]);
-  grunt.registerTask("test", ["qunit:all"]);
 };

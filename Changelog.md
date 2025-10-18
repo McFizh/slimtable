@@ -1,5 +1,11 @@
 ### Changelog
 
+- **v2.0.3** - 19.10.2025
+
+  - Added devcontainer support
+  - Replace grunt-qunit with direct puppeteer script
+  - Update dev dependencies
+
 - **v2.0.2** - 12.7.2025
 
   - Fixed issues with ajax data loader

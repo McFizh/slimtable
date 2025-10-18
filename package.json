@@ -1,7 +1,7 @@
 {
   "name": "slimtable",
   "description": "jQuery plugin to create sortable and pageable table.",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "author": "Pekka Harjamäki <mcfizh@gmail.com>",
   "homepage": "https://slimtable.mcfish.org",
   "license": "MIT",
@@ -20,7 +20,7 @@
   },
   "scripts": {
     "test:lint": "eslint src/slimtable.js",
-    "test:qunit": "grunt test",
+    "test:qunit": "node run-tests.mjs",
     "test": "npm run test:lint && npm run test:qunit",
     "demoserver": "http-server ./examples"
   },
@@ -31,9 +31,9 @@
     "grunt": "^1.5.3",
     "grunt-contrib-clean": "^2.0.1",
     "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-qunit": "^10.1.1",
     "grunt-contrib-uglify": "^5.2.2",
     "http-server": "^14.1.1",
+    "puppeteer": "^24.25.0",
     "qunit": "^2.19.3"
   }
 }
