@@ -16,7 +16,7 @@
   "main": "js/slimtable.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/McFizh/slimtable.git"
+    "url": "git+https://github.com/McFizh/slimtable.git"
   },
   "scripts": {
     "test:lint": "eslint src/slimtable.js",
