@@ -1,9 +1,9 @@
 /*!
- * slimtable ( http://slimtable.mcfish.org/ )
+ * slimtable ( https://slimtable.mcfish.org/ )
  *
  * Licensed under MIT license.
  *
- * @version 2.0.3
+ * @version 2.0.4
  * @author Pekka Harjamäki
  */
 ;(function ($) {

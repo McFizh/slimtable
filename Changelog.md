@@ -1,5 +1,10 @@
 ### Changelog
 
+- **v2.0.4** - 13.03.2026
+
+  - Update dev dependencies
+  - Replaced grunt with esbuild
+
 - **v2.0.3** - 19.10.2025
 
   - Added devcontainer support

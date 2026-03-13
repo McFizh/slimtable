@@ -32,7 +32,11 @@ Might work with other browsers, but these are the ones that are officially suppo
 ### How to build
 
 - npm ci
-- npx grunt
+- npm run build
+
+After building the dist, you can try out the demo server:
+
+- npm run demoserver
 
 ---
 

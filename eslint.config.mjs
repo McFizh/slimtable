@@ -6,7 +6,7 @@ export default defineConfig([
   {
     files: ["**/*.js"],
     languageOptions: {
-      globals: { ...globals.browser, ...globals.jquery },
+      globals: { ...globals.browser, ...globals.node, ...globals.jquery },
       sourceType: "script",
     },
     extends: ["js/recommended"],
