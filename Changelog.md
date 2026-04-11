@@ -1,5 +1,9 @@
 ### Changelog
 
+- **v2.0.5** - 11.04.2026
+
+  - Update dev dependencies
+
 - **v2.0.4** - 13.03.2026
 
   - Update dev dependencies
