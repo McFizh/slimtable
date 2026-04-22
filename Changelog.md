@@ -1,33 +1,37 @@
 ### Changelog
 
-- **v2.0.5** - 11.04.2026
+- **v2.1.0** - 23.04.2026
+  - Replaced arrow sprites with svg
+  - Replaced deprecated "unselectable" html attribute with modern css
+  - Replaced some old jquery calls to native js versions
+  - Added some initial ARIA attributes to improve accessability
+  - Fixed month overflow bug in date sorting
+  - Date detection had faulty regexp and didn't understand dates like: 15-01-2026
+  - Added ISO 8601 date format (2026-01-15) to detection
+  - Ajax loading message (text2) was never shown properly
 
+- **v2.0.5** - 11.04.2026
   - Update dev dependencies
   - Added jQuery integrity hashes
 
 - **v2.0.4** - 13.03.2026
-
   - Update dev dependencies
   - Replaced grunt with esbuild
 
 - **v2.0.3** - 19.10.2025
-
   - Added devcontainer support
   - Replace grunt-qunit with direct puppeteer script
   - Update dev dependencies
 
 - **v2.0.2** - 12.7.2025
-
   - Fixed issues with ajax data loader
   - Updated eslint from 8 to 9 + dev dependency updates
 
 - **v2.0.1** - 2.8.2024
-
   - Fixed getter (gave out non-existent property)
   - Multiple initialization of plugin doesn't now break it
 
 - **v2.0.0** - 2.8.2024
-
   - Refactored folder structure
   - Added support for jquery 3 and removed support for versions 1 & 2
   - Updated packages + build tools
@@ -37,35 +41,28 @@
   - Partial code clean (vars to let/const)
 
 - **v1.3.1** - 15.3.2016
-
   - Fixed setting "colsettings" bug in init. Also added test for this
 
 - **v1.3.0** - 14.3.2016
-
   - Plugin structure is rewritten to support state getter. Now you can create a method to save table state to localstorage or similar.
   - Once again had to increase target size from 6kB to 8kB :(
 
 - **v1.2.7** - 8.3.2016
-
   - Column type detection ignores empty elements, this makes results more accurate
   - Unit testing added for sorting text & numbers
 
 - **v1.2.6** - 7.3.2016
-
   - Now rows (tr in tbody) can also preserve attributes
 
 - **v1.2.5** - 4.3.2016
-
   - Fixed problem with parsing json data
   - Updated packages needed to build minified js
   - Added JSHint + QUnit testing on Travis
 
 - **v1.2.4** - 17.7.2015
-
   - Fixed packing files.. once again
 
 - **v1.2.3** - 3.6.2015
-
   - Library target size increased from 5kB to 6kB :(
   - Added preserve td attributes functionality
   - HTML cleaning function had typo in it, so it failed to work
@@ -74,41 +71,33 @@
   - Multiple column sorting was broken in some cases
 
 - **v1.2.2** - 28.05.2015
-
   - Speeded up sorting in some cases
   - Autodetection for date types (accepted formats: dd.mm.yyyy / dd-mm-yyyy / dd/mm/yyyy )
   - Columns with sorting disabled get 'slimtable-unsortable' class for header th
 
 - **v1.2.1** - 27.05.2015
-
   - Small fixes to packaging files
 
 - **v1.2.0** - 27.05.2015
-
   - Added to bower repository
   - Grunt is now used to build script
 
 - **v1.1.3** - 18.08.2013
-
   - More ajax loading options
 
 - **v1.1.2** - 11.8.2013
-
   - Sort start/end callbacks
   - Option for html stripping content before sorting
   - Localizable string ( items/page )
   - More accurate column type detection
 
 - **v1.1.1** - 28.7.2013
-
   - Script crashed if column count differed between headers and data
   - Float, percentage and currency detection added to sort (see updated example 4)
 
 - **v1.1.0** - 26.7.2013
-
   - Creating table from ajax data now works
   - Lowered jQuery requirement to jQuery 1.8
 
 - **v1.0** - 25.7.2013
-
   - Public release

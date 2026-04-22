@@ -79,7 +79,7 @@
 	background-color: #ccc;
 }
 
-/* Sprites */
+/* Sort icons */
 
 .slimtable-sprites {
 	margin-left: 2px;
@@ -87,23 +87,22 @@
 	vertical-align: middle;
 
 	display: inline-block;
-	background-image: url("arrows.png");
+	background-repeat: no-repeat;
 	width: 17px;
 	height: 17px;
 }
 
 .slimtable-sortboth {
-	background-position: -1px -1px;
+	background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='17' height='17'><polygon points='8.5,2 3,8 14,8' fill='%23b8c8dc'/><polygon points='8.5,15 3,9 14,9' fill='%23b8c8dc'/></svg>");
 }
 
 .slimtable-sortnone {
-	background-position: -19px -19px;
 }
 
 .slimtable-sortasc {
-	background-position: -1px -19px;
+	background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='17' height='17'><polygon points='8.5,2 3,8 14,8' fill='white'/><polygon points='8.5,15 3,9 14,9' fill='%23607590'/></svg>");
 }
 
 .slimtable-sortdesc {
-	background-position: -19px -1px;
+	background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='17' height='17'><polygon points='8.5,2 3,8 14,8' fill='%23607590'/><polygon points='8.5,15 3,9 14,9' fill='white'/></svg>");
 }

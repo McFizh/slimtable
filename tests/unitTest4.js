@@ -13,9 +13,13 @@ QUnit.test("basic test", (assert) => {
 
   // Wait 0.5s for the table to load
   setTimeout(() => {
+    // No TH should have the deprecated 'unselectable' attribute
+    assert.equal($("#testTable").find("thead th[unselectable]").length, 0, "No th has unselectable attribute");
+
+    // All 8 sortable TH elements should have aria-sort attribute
     $("#testTable").find("thead").each(function () {
       $(this).find("th").each(function () {
-        if ($(this).attr("unselectable") === "on")
+        if ($(this).attr("aria-sort") !== undefined)
           thfound++;
       });
     });

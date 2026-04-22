@@ -27,7 +27,9 @@ Might work with other browsers, but these are the ones that are officially suppo
 - Optional HTML cleaner for sortable data
 - Autodetection of following values:
   - Numeral values with/without the following prefixes: % $ € £ e
-  - Dates in format: dd-mm-yyyy , dd.mm.yyyy , dd/mm/yyyy
+  - Dates in formats:
+    - dd-mm-yyyy , dd.mm.yyyy , dd/mm/yyyy
+    - yyyy-mm-dd , yyyy.mm.dd , yyyy/mm/dd
 
 ### How to build
 

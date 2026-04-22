@@ -3,10 +3,13 @@ QUnit.test("Structure creation, paging, sorting", (assert) => {
   
   let thfound=0, trfound=0;
 
-  // Table should have 6 TH elements with attributes 'unselectable'='on'
+  // No TH should have the deprecated 'unselectable' attribute
+  assert.equal($("#testTable").find("thead th[unselectable]").length, 0, "No th has unselectable attribute");
+
+  // All 6 sortable TH elements should have aria-sort attribute
   $("#testTable").find("thead").each(function(){
     $(this).find("th").each(function(){
-      if( $(this).attr("unselectable") === "on" )
+      if( $(this).attr("aria-sort") !== undefined )
         thfound++;
     });
   });

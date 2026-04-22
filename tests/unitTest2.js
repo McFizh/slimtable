@@ -8,10 +8,13 @@ QUnit.test("basic test", (assert) => {
       $("#testTable").slimtable({ tableData: data });
       assert.ok(true, "Test resumed after ajax call");
 
-      // Table should have 8 TH elements with attributes 'unselectable'='on'
+      // No TH should have the deprecated 'unselectable' attribute
+      assert.equal($("#testTable").find("thead th[unselectable]").length, 0, "No th has unselectable attribute");
+
+      // All 8 sortable TH elements should have aria-sort attribute
       $("#testTable").find("thead").each(function () {
         $(this).find("th").each(function () {
-          if ($(this).attr("unselectable") === "on")
+          if ($(this).attr("aria-sort") !== undefined)
             thfound++;
         });
       });

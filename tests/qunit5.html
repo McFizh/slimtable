@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Slimtable test 5 - date sorting</title>
+
+    <!-- Load jquery 3.7 -->
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.min.js"
+      integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+      crossorigin="anonymous"
+    ></script>
+    <script src="../src/slimtable.js"></script>
+
+    <!-- Load local QUnit. -->
+    <link
+      rel="stylesheet"
+      href="../node_modules/qunit/qunit/qunit.css"
+      media="screen"
+    />
+    <script src="../node_modules/qunit/qunit/qunit.js"></script>
+  </head>
+  <body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture">
+      <table id="testTable">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Alice</td><td>31-01-2020</td></tr>
+          <tr><td>2</td><td>Bob</td><td>01-02-2020</td></tr>
+          <tr><td>3</td><td>Carol</td><td>15-06-2020</td></tr>
+          <tr><td>4</td><td>Dave</td><td>01-12-2019</td></tr>
+          <tr><td>5</td><td>Eve</td><td>01-01-2020</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script type="text/javascript" src="unitTest5.js"></script>
+  </body>
+</html>

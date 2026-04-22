@@ -18,15 +18,18 @@ QUnit.test("basic test", (assert) => {
 
       assert.ok(true, "Test resumed after ajax call");
 
-      // Table should have 5 TH elements with attributes 'unselectable'='on'
+      // No TH should have the deprecated 'unselectable' attribute
+      assert.equal($("#testTable").find("thead th[unselectable]").length, 0, "No th has unselectable attribute");
+
+      // 7 of 8 TH elements should have aria-sort (col 3 has enableSort: false)
       $("#testTable").find("thead").each(function () {
         $(this).find("th").each(function () {
-          if ($(this).attr("unselectable") === "on")
+          if ($(this).attr("aria-sort") !== undefined)
             thfound++;
         });
       });
 
-      assert.equal(thfound, 8, "Proper number of th's found");
+      assert.equal(thfound, 7, "Proper number of th's found");
 
       // Table should have 9 data rows elements
       $("#testTable").find("tbody").each(function () {

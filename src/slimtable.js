@@ -3,7 +3,7 @@
  *
  * Licensed under MIT license.
  *
- * @version 2.0.5
+ * @version 2.1.0
  * @author Pekka Harjamäki
  */
 ;(function ($) {
@@ -14,7 +14,7 @@
      * Class initializer
      * ******************************************************************* */
     init1: function ($el, options) {
-      this.settings = $.extend(
+      this.settings = Object.assign(
         {
           tableData: null,
           dataUrl: null,
@@ -35,6 +35,8 @@
         },
         options
       );
+
+      this.$el = $el;
 
       this.state = {
         showLoader: false,
@@ -116,7 +118,8 @@
       const patt_01 = /[^0-9]/g,
         patt_02 = /^[0-9]+([.,][0-9]+)?$/,
         patt_03 = /^([0-9]+([.,][0-9]+)?)\s*[%$€£e]?$/,
-        patt_04 = /^[0-9]{1,2}[.-/][0-9]{1,2}[.-/][0-9]{4}$/;
+        patt_04 = /^[0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{4}$/,
+        patt_05 = /^[0-9]{4}[./-][0-9]{1,2}[./-][0-9]{1,2}$/;
 
       // Given element is empy
       if (data.length === 0) return -1;
@@ -132,6 +135,7 @@
 
       // Date .. maybe?
       if (patt_04.test(data)) return 4;
+      if (patt_05.test(data)) return 5;
 
       // String comparison
       return 0;
@@ -147,6 +151,9 @@
       // If dataUrl attribute is set, then load the data and continue after loading is done
       if (this.settings.dataUrl && this.settings.dataUrl.length > 2) {
         this.state.showLoader = true;
+        this.state.tableBody.html(
+          "<tr><td colspan=\"" + this.state.tableHeads.length + "\">" + this.settings.text2 + "</td></tr>"
+        );
         $.ajax({
           url: this.settings.dataUrl,
           dataType: "json"
@@ -231,7 +238,7 @@
 
             if (tObj.clean === null) {
               tObj = this.state.colSettings[l1].stripHtml ? this.state.cleanerDiv.html(tObj.orig).text() : tObj.orig;
-              tObj = $.trim(tObj).toLowerCase();
+              tObj = tObj.trim().toLowerCase();
               this.state.tblData[l2].data[l1].clean = tObj;
             } else {
               tObj = tObj.clean;
@@ -242,7 +249,7 @@
               matchArr[tAttr]++;
           }
 
-          this.state.colSettings[l1].rowType = $.inArray(Math.max.apply(this, matchArr), matchArr);
+          this.state.colSettings[l1].rowType = matchArr.indexOf(Math.max(...matchArr));
         }
 
         // Cleanup data based on type
@@ -258,9 +265,9 @@
             this.state.tblData[l2].data[l1].clean = parseFloat(tObj.replace(",", "."));
 
           // Convert values to dates
-          if (tAttr === 4) {
-            tObj = tObj.split(/[./-]/);
-            this.state.tblData[l2].data[l1].clean = new Date(tObj[2], tObj[1], tObj[0]);
+          if (tAttr === 4 || tAttr === 5) {
+            tObj = tObj.split(/[./-]/).map(Number);
+            this.state.tblData[l2].data[l1].clean = tAttr === 4 ? new Date(tObj[2], tObj[1] - 1, tObj[0]) : new Date(tObj[0], tObj[1] - 1, tObj[2]);
           }
         }
       }
@@ -279,15 +286,16 @@
         t_item1 = $(this.state.tableHeads[l1]);
         t_item2 = t_item1.find("span");
 
-        if ($.inArray(l1, this.state.sortList) < 0) {
-          t_item1.removeClass("slimtable-activeth");
+        if (!this.state.sortList.includes(l1)) {
+          t_item1.removeClass("slimtable-activeth").attr("aria-sort", "none");
           t_item2.removeClass("slimtable-sortasc").removeClass("slimtable-sortdesc").addClass("slimtable-sortboth");
         } else {
-          t_item1.addClass("slimtable-activeth");
+          const dir = this.state.colSettings[l1].sortDir;
+          t_item1.addClass("slimtable-activeth").attr("aria-sort", dir === "asc" ? "ascending" : "descending");
           t_item2
             .removeClass("slimtable-sortboth")
-            .removeClass("slimtable-sort" + (this.state.colSettings[l1].sortDir === "asc" ? "desc" : "asc"))
-            .addClass("slimtable-sort" + this.state.colSettings[l1].sortDir);
+            .removeClass("slimtable-sort" + (dir === "asc" ? "desc" : "asc"))
+            .addClass("slimtable-sort" + dir);
         }
       }
     },
@@ -338,10 +346,11 @@
         $(t_obj1)
           .addClass("slimtable-page-btn")
           .on("click", { self: this }, this.handlePageChange)
-          .text(l1 + 1);
+          .text(l1 + 1)
+          .attr("aria-label", "Page " + (l1 + 1));
 
         if (l1 * this.state.itemsPerPage === this.state.pagingStart)
-          $(t_obj1).addClass("active");
+          $(t_obj1).addClass("active").attr("aria-current", "true");
 
         $(this.state.btnContainer).append(t_obj1);
       }
@@ -354,11 +363,11 @@
       const self = this;
 
       this.state.tableHeads.each(function (index) {
-        $(this).attr("unselectable", "on");
         const tCfg = self.state.colSettings[index];
 
         if (tCfg && tCfg.enableSort) {
-          const tObj = $("<span></span>").attr("unselectable", "on").addClass("slimtable-sprites");
+          $(this).attr("aria-sort", "none");
+          const tObj = $("<span></span>").addClass("slimtable-sprites");
 
           if (tCfg.sortDir === "asc") {
             tObj.addClass("slimtable-sortasc");
@@ -423,6 +432,7 @@
 
           for (l1 = 0; l1 < slistLength; l1++) {
             const t1 = self.state.sortList[l1];
+            const rowType = self.state.colSettings[t1].rowType;
 
             // Swap variables, if sortdir = ascending
             if (self.state.colSettings[t1].sortDir === "desc") {
@@ -435,9 +445,10 @@
 
             // Given variables match, move to next sort parameter
             same_item = false;
-            if (self.state.colSettings[t1].rowType === 0) {
+
+            if (rowType === 0) {
               if (ta.localeCompare(tb) === 0) same_item = true;
-            } else if (self.state.colSettings[t1].rowType === 4) {
+            } else if (rowType === 4 || rowType === 5) {
               if (ta - tb === 0) same_item = true;
             } else {
               if (ta === tb) same_item = true;
@@ -447,7 +458,7 @@
             if (same_item && l1 < slistLength - 1) continue;
 
             // Compare values
-            return self.state.colSettings[t1].rowType === 0 ? ta.localeCompare(tb) : ta - tb;
+            return rowType === 0 ? ta.localeCompare(tb) : ta - tb;
           }
         });
 
@@ -462,7 +473,7 @@
     handleHeaderClick: function (e) {
       const self = e.data.self;
       const idx = $(this).index();
-      const pos = $.inArray(idx, self.state.sortList);
+      const pos = self.state.sortList.indexOf(idx);
 
       //
       e.preventDefault();
@@ -538,6 +549,23 @@
         pagingStart: state.pagingStart,
         itemsPerPage: state.itemsPerPage
       };
+    },
+
+    destroy: function () {
+      const $container = this.$el.closest(".slimtable-container-div");
+      $container.before(this.$el);
+      $container.remove();
+
+      this.$el.removeClass("slimtable");
+
+      this.state.tableHeads
+        .off("click")
+        .removeAttr("aria-sort style")
+        .removeClass("slimtable-activeth slimtable-unsortable")
+        .find("span.slimtable-sprites")
+        .remove();
+
+      $.removeData(this.$el[0], "plugin_slimtable");
     }
   };
 
@@ -560,6 +588,11 @@
     } else if (typeof options === "string" && options === "getState") {
       const instance = $(this).data(key);
       return instance ? instance.getState() : {};
+    } else if (typeof options === "string" && options === "destroy") {
+      return this.each(function () {
+        const instance = $.data(this, key);
+        if (instance) instance.destroy();
+      });
     }
   };
 })(jQuery);
