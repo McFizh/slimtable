@@ -68,3 +68,37 @@ QUnit.test("Structure creation, paging, sorting", (assert) => {
   $("#testTable thead th:nth-child(5)").trigger("click");
   assert.ok( $("#testTable tbody tr:nth-child(1) td:nth-child(5)").text() === "197,3" , "DESC float sorting works" );
 });
+
+QUnit.test("Currency (percentage suffix) sorting", (assert) => {
+  $("#featureTable").slimtable({});
+
+  const scoreCol = (n) =>
+    $("#featureTable tbody tr:nth-child(" + n + ") td:nth-child(2)").text();
+
+  // ASC sort: 5% < 19.8% < 42.6% < 99% < 197.3%
+  $("#featureTable thead th:nth-child(2)").trigger("click");
+  assert.equal(scoreCol(1), "5%",     "ASC row 1: smallest percentage first");
+  assert.equal(scoreCol(5), "197.3%", "ASC row 5: largest percentage last");
+
+  // DESC sort
+  $("#featureTable thead th:nth-child(2)").trigger("click");
+  assert.equal(scoreCol(1), "197.3%", "DESC row 1: largest percentage first");
+  assert.equal(scoreCol(5), "5%",     "DESC row 5: smallest percentage last");
+});
+
+QUnit.test("stripHtml sorting", (assert) => {
+  $("#featureTable").slimtable({ colSettings: [{ colNumber: 2, stripHtml: true }] });
+
+  const pointsCol = (n) =>
+    $("#featureTable tbody tr:nth-child(" + n + ") td:nth-child(3)").text();
+
+  // ASC sort: HTML tags stripped, values sorted numerically (5 < 17 < 42 < 63 < 99)
+  $("#featureTable thead th:nth-child(3)").trigger("click");
+  assert.equal(pointsCol(1), "5",  "ASC row 1: HTML stripped, smallest integer first");
+  assert.equal(pointsCol(5), "99", "ASC row 5: HTML stripped, largest integer last");
+
+  // DESC sort
+  $("#featureTable thead th:nth-child(3)").trigger("click");
+  assert.equal(pointsCol(1), "99", "DESC row 1: HTML stripped, largest integer first");
+  assert.equal(pointsCol(5), "5",  "DESC row 5: HTML stripped, smallest integer last");
+});

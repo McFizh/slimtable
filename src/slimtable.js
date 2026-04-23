@@ -229,7 +229,7 @@
       /*********************** Determine col types ***********************/
 
       for (l1 = 0; l1 < this.state.tableHeads.length; l1++) {
-        matchArr = [0, 0, 0, 0, 0];
+        matchArr = [0, 0, 0, 0, 0, 0];
 
         if (this.state.colSettings[l1].rowType === -1) {
           for (l2 = 0; l2 < this.state.tblData.length; l2++) {
